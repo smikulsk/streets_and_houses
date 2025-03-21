@@ -1,0 +1,7 @@
+[package]
+name = "streets_and_boxes"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+good-web-game = "0.6.1"
