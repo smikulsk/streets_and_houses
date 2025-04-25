@@ -1,5 +1,7 @@
 use std::cmp::Ordering;
 
+pub mod controller;
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Player {
     Player1,
@@ -12,6 +14,7 @@ pub struct GameStatistics {
     pub winner : Option<Player>
 }
 
+#[derive(Debug)]
 pub struct Cell {
     _id : (usize,usize),
     counter : usize,
@@ -24,7 +27,7 @@ impl Cell {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Wall {
     _id : (usize,usize),
     pub is_clicked : bool,
@@ -42,6 +45,7 @@ impl Wall {
     }
 }
 
+#[derive(Debug)]
 pub struct Board {
     pub width : usize,
     pub height : usize,
