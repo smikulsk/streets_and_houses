@@ -10,7 +10,6 @@ use ggez::event;
 use ggez::graphics;
 use ggez::graphics::Rect;
 use ggez::miniquad;
-use ggez::timer;
 use ggez::Context;
 use ggez::GameResult;
 

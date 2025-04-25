@@ -43,14 +43,14 @@ impl Scene for GameOverScene {
             quad_ctx,
             width / 2.0 - 50.0,
             height / 2.0 - 100.0,
-            &format!("Player 1 points: {}", self.statistics.player1_points),
+            &format!("Player1 points: {}", self.statistics.player1_points),
         )?;
         draw_text(
             ctx,
             quad_ctx,
             width / 2.0 - 50.0,
             height / 2.0 - 60.0,
-            &format!("Player 2 points: {}", self.statistics.player2_points),
+            &format!("Player2 points: {}", self.statistics.player2_points),
         )?;
         draw_text(
             ctx,

@@ -41,12 +41,12 @@ impl PlayingScene {
         Ok(s)
     }
 
-    fn get_tile_size(&self, quad_ctx: &mut miniquad::Context) -> (f32, f32) {
+    fn get_tile_size(&self, quad_ctx: &mut miniquad::Context, footer_height : f32) -> (f32, f32) {
         let (w, h) = quad_ctx.display().screen_size();
 
         (
             (w as usize / (6 * self.board.width + 1)) as f32,
-            (h as usize / (6 * self.board.height + 1)) as f32,
+            ((h - footer_height) as usize / (6 * self.board.height + 1)) as f32,
         )
     }
 
@@ -89,6 +89,12 @@ impl PlayingScene {
             self.spritebatch.add(p);
         }
     }
+    
+    fn draw_footer(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::Context) -> Result<Rect, ggez::GameError> {
+        let (width, height) = graphics::drawable_size(quad_ctx);
+        let footer_rect = draw_text(ctx, quad_ctx, width/2.0, height - 15.0, &format!("========================= {:?} =========================", self.player))?;
+        Ok(footer_rect)
+    }
 }
 
 impl Scene for PlayingScene {
@@ -96,34 +102,18 @@ impl Scene for PlayingScene {
 
     fn update(
         &mut self,
-        ctx: &mut ggez::Context,
+        _ctx: &mut ggez::Context,
         _quad_ctx: &mut event::GraphicsContext,
-    ) -> Result<Option<Transition>, ggez::GameError> {
-        if timer::ticks(ctx) % 100 == 0 {
-            // println!("Delta frame time: {:?} ", timer::delta(ctx));
-            // println!("Average FPS: {}", timer::fps(ctx));
-            println!("Current player: {:?}", self.player);
-
-            if self.board.all_is_clicked() {
-                let game_statistics = self.board.get_statistics();
-
-                println!("Player 1 points: {}", game_statistics.player1_points);
-                println!("Player 2 points: {}", game_statistics.player2_points);
-                if let Some(player) = game_statistics.winner {
-                    println!("{:?} wins!!!", player);
-                } else {
-                    println!("It is a tie!!!");
-                }
-                //self.reinit_game();
-            }
-        }
+    ) -> Result<Option<Transition>, ggez::GameError> {        
         Ok(None)
     }
-
+    
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
         graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
+        
+        let footer_rect = self.draw_footer(ctx, quad_ctx)?;
 
-        let tile_size = self.get_tile_size(quad_ctx);
+        let tile_size = self.get_tile_size(quad_ctx, footer_rect.h);
 
         for row in 0..2 * self.board.height + 1 {
             if row % 2 == 0 {
@@ -157,6 +147,7 @@ impl Scene for PlayingScene {
             spritebatch.clear();
         }
 
+
         graphics::present(ctx, quad_ctx)?;
         Ok(())
     }
@@ -189,7 +180,7 @@ impl Scene for PlayingScene {
         }
 
         if let Some((row, col)) = clicked_wall_coords {
-            println!("Trying to click the ({},{}) wall", row, col);
+            //println!("Trying to click the ({},{}) wall", row, col);
             match self.board.click_wall(row, col, self.player) {
                 Ok(additional_move) => {
                     if !additional_move {
