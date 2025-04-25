@@ -1,14 +1,24 @@
-use std::io;
-
 use crate::game::Board;
 use crate::scene::prelude::*;
 
 #[derive(Debug, Clone)]
-pub struct MainMenuScene {}
+pub struct MainMenuScene {
+    width: usize,
+    height: usize,
+    width_button_bounding_box: Rect,
+    height_button_bounding_box: Rect,
+    start_button_bounding_box: Rect,
+}
 
 impl MainMenuScene {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            width: 3,
+            height: 3,
+            width_button_bounding_box: Rect::default(),
+            height_button_bounding_box: Rect::default(),
+            start_button_bounding_box: Rect::default(),
+        }
     }
 }
 
@@ -33,14 +43,42 @@ impl Scene for MainMenuScene {
         graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
 
         let (width, height) = graphics::drawable_size(quad_ctx);
-        let text = graphics::Text::new("Click to start the game!");
-        let text_width = text.width(ctx);
-        let text_height = text.height(ctx);
-        let dest_point = graphics::DrawParam::new().dest(Point2::new(
-            (width - text_width) / 2.0,
-            (height - text_height) / 2.0,
-        ));
-        graphics::draw(ctx, quad_ctx, &text, dest_point)?;
+
+        draw_text(
+            ctx,
+            quad_ctx,
+            width / 2.0 - 50.0,
+            height / 2.0 - 60.0,
+            "Width:",
+        )?;
+        self.width_button_bounding_box = draw_button(
+            ctx,
+            quad_ctx,
+            width / 2.0,
+            height / 2.0 - 60.0,
+            &self.width.to_string(),
+        )?;
+        draw_text(
+            ctx,
+            quad_ctx,
+            width / 2.0 - 50.0,
+            height / 2.0 - 20.0,
+            "Height:",
+        )?;
+        self.height_button_bounding_box = draw_button(
+            ctx,
+            quad_ctx,
+            width / 2.0,
+            height / 2.0 - 20.0,
+            &self.height.to_string(),
+        )?;
+        self.start_button_bounding_box = draw_button(
+            ctx,
+            quad_ctx,
+            width / 2.0,
+            height / 2.0 + 40.0,
+            "Click to start the game!",
+        )?;
 
         graphics::present(ctx, quad_ctx)?;
         Ok(())
@@ -50,41 +88,33 @@ impl Scene for MainMenuScene {
         &mut self,
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::miniquad::GraphicsContext,
-        _button: ggez::event::MouseButton,
-        _x: f32,
-        _y: f32,
+        button: ggez::event::MouseButton,
+        x: f32,
+        y: f32,
     ) -> Option<Transition> {
-        let board = init_board();
-        match board {
-            Ok(board) => {
-                let game = PlayingScene::new(ctx, quad_ctx, board).expect("board was initialized");
-                Some(Transition::ToPlaying(Box::new(game)))
-            }
-            Err(_) => {
-                println!("Error initializing the game board.");
-                None
-            }
-        }
+        let point = Point2::new(x, y);
+        self.height_button_bounding_box.contains(point).then(|| {
+            button
+                .eq(&event::MouseButton::Left)
+                .then(|| self.height = std::cmp::min(self.height + 1, 9));
+            button
+                .eq(&event::MouseButton::Right)
+                .then(|| self.height = std::cmp::max(self.height - 1, 1));
+        });
+
+        self.width_button_bounding_box.contains(point).then(|| {
+            button
+                .eq(&event::MouseButton::Left)
+                .then(|| self.width = std::cmp::min(self.width + 1, 9));
+            button
+                .eq(&event::MouseButton::Right)
+                .then(|| self.width = std::cmp::max(self.width - 1, 1));
+        });
+
+        self.start_button_bounding_box.contains(point).then(|| {
+            let game = PlayingScene::new(ctx, quad_ctx, Board::new(self.width, self.height))
+                .expect("board was initialized");
+            Transition::ToPlaying(Box::new(game))
+        })
     }
-}
-
-fn get_number_pair_from_input() -> io::Result<(usize, usize)> {
-    let mut buffer = String::new();
-    io::stdin().read_line(&mut buffer)?;
-
-    if let Some((a, b)) = buffer.split_once(',') {
-        let a = a.trim().parse::<usize>().expect("this is a number");
-        let b = b.trim().parse::<usize>().expect("this is a number");
-        return Ok((a, b));
-    }
-    Err(io::Error::new(
-        io::ErrorKind::Other,
-        "Wrong imput format. Should be 'number,number'",
-    ))
-}
-
-fn init_board() -> io::Result<Board> {
-    println!("Provide width and height delimited with comma");
-    let (width, height) = get_number_pair_from_input()?;
-    Ok(Board::new(width, height))
 }

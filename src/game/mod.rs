@@ -5,41 +5,50 @@ pub mod controller;
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Player {
     Player1,
-    Player2
+    Player2,
 }
 
+#[derive(Debug, Clone)]
 pub struct GameStatistics {
-    pub player1_points : usize,
-    pub player2_points : usize,
-    pub winner : Option<Player>
+    pub player1_points: usize,
+    pub player2_points: usize,
+    pub winner: Option<Player>,
 }
 
 #[derive(Debug)]
 pub struct Cell {
-    _id : (usize,usize),
-    counter : usize,
-    pub owner : Option<Player>,
+    _id: (usize, usize),
+    counter: usize,
+    pub owner: Option<Player>,
 }
 
 impl Cell {
-    pub fn new(row : usize, col : usize) -> Self {
-        Self { _id: (row,col), counter : 0, owner : None }
+    pub fn new(row: usize, col: usize) -> Self {
+        Self {
+            _id: (row, col),
+            counter: 0,
+            owner: None,
+        }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Wall {
-    _id : (usize,usize),
-    pub is_clicked : bool,
-    adjacent_cells : Vec<(usize,usize)>
+    _id: (usize, usize),
+    pub is_clicked: bool,
+    adjacent_cells: Vec<(usize, usize)>,
 }
 
 impl Wall {
-    pub fn new(row: usize, col : usize) -> Self {
-        Self { _id : (row, col), is_clicked : false, adjacent_cells : vec![] }
+    pub fn new(row: usize, col: usize) -> Self {
+        Self {
+            _id: (row, col),
+            is_clicked: false,
+            adjacent_cells: vec![],
+        }
     }
-    
-    pub fn adjacent_to(&mut self, cell_ids : &[(usize, usize)]) -> &Self {
+
+    pub fn adjacent_to(&mut self, cell_ids: &[(usize, usize)]) -> &Self {
         self.adjacent_cells = cell_ids.to_vec();
         self
     }
@@ -47,45 +56,56 @@ impl Wall {
 
 #[derive(Debug)]
 pub struct Board {
-    pub width : usize,
-    pub height : usize,
-    pub cells : Vec<Vec<Cell>>,
-    pub walls : Vec<Vec<Wall>>
+    pub width: usize,
+    pub height: usize,
+    pub cells: Vec<Vec<Cell>>,
+    pub walls: Vec<Vec<Wall>>,
 }
 
 impl Board {
-    pub fn new(width : usize, height : usize) -> Self {
+    pub fn new(width: usize, height: usize) -> Self {
         let cells = (0..height)
-            .map(|row| (0..width)
-                            .map(|col| Cell::new(row,col))
-                            .collect::<Vec<_>>()
-            )
+            .map(|row| {
+                (0..width)
+                    .map(|col| Cell::new(row, col))
+                    .collect::<Vec<_>>()
+            })
             .collect::<Vec<_>>();
-            
-        let walls = (0..2*height + 1)
+
+        let walls = (0..2 * height + 1)
             .map(|row| {
                 if row % 2 == 0 {
                     (0..width)
-                        .map(|col| { 
-                            let adjacent_cells = [(row as isize/2 - 1, col as isize ), (row as isize/2, col as isize)]
-                                .iter()
-                                .filter_map(|(r,c)| check_coordinates(width as isize,height as isize,*r,*c))
-                                .collect::<Vec<_>>();
-                                
-                            Wall::new(row,col)
+                        .map(|col| {
+                            let adjacent_cells = [
+                                (row as isize / 2 - 1, col as isize),
+                                (row as isize / 2, col as isize),
+                            ]
+                            .iter()
+                            .filter_map(|(r, c)| {
+                                check_coordinates(width as isize, height as isize, *r, *c)
+                            })
+                            .collect::<Vec<_>>();
+
+                            Wall::new(row, col)
                                 .adjacent_to(&adjacent_cells.clone())
                                 .clone()
                         })
                         .collect::<Vec<_>>()
                 } else {
                     (0..width + 1)
-                        .map(|col| { 
-                            let adjacent_cells = [(row as isize/2, col as isize - 1 ), (row as isize/2, col as isize)]
-                                .iter()
-                                .filter_map(|(r,c)| check_coordinates(width as isize,height as isize,*r,*c))
-                                .collect::<Vec<_>>();
-                                
-                            Wall::new(row,col)
+                        .map(|col| {
+                            let adjacent_cells = [
+                                (row as isize / 2, col as isize - 1),
+                                (row as isize / 2, col as isize),
+                            ]
+                            .iter()
+                            .filter_map(|(r, c)| {
+                                check_coordinates(width as isize, height as isize, *r, *c)
+                            })
+                            .collect::<Vec<_>>();
+
+                            Wall::new(row, col)
                                 .adjacent_to(&adjacent_cells.clone())
                                 .clone()
                         })
@@ -93,18 +113,17 @@ impl Board {
                 }
             })
             .collect::<Vec<_>>();
-            
+
         Self {
             width,
             height,
             cells,
-            walls
+            walls,
         }
     }
 
-    pub fn click_wall(&mut self, row: usize, col : usize, player : Player) -> Result<bool,String> {
-        if row > 2*self.height || (row %2 == 0 && col >= self.width )
-            || col > self.width {
+    pub fn click_wall(&mut self, row: usize, col: usize, player: Player) -> Result<bool, String> {
+        if row > 2 * self.height || (row % 2 == 0 && col >= self.width) || col > self.width {
             return Err("Wrong coordinates of wall".to_string());
         }
         let wall = &mut self.walls[row][col];
@@ -124,10 +143,10 @@ impl Board {
         } else {
             return Err("Wall is already clicked!".to_string());
         }
-        
+
         Ok(additional_move)
     }
-    
+
     pub fn all_is_clicked(&self) -> bool {
         for row in &self.walls {
             for wall in row {
@@ -138,35 +157,46 @@ impl Board {
         }
         true
     }
-    
+
     pub fn get_statistics(&self) -> GameStatistics {
-        let player1_points = self.cells
+        let player1_points = self
+            .cells
             .iter()
-            .map(|row| row
-                .iter()
-                .filter(|cell| cell.owner == Some(Player::Player1))
-                .count()
-            )
+            .map(|row| {
+                row.iter()
+                    .filter(|cell| cell.owner == Some(Player::Player1))
+                    .count()
+            })
             .sum::<usize>();
-        let player2_points = self.cells
+        let player2_points = self
+            .cells
             .iter()
-            .map(|row| row
-                .iter()
-                .filter(|cell| cell.owner == Some(Player::Player2))
-                .count()
-            )
+            .map(|row| {
+                row.iter()
+                    .filter(|cell| cell.owner == Some(Player::Player2))
+                    .count()
+            })
             .sum::<usize>();
-        let winner =  match player1_points.cmp(&player2_points) {
-            Ordering::Greater =>  Some(Player::Player1),
+        let winner = match player1_points.cmp(&player2_points) {
+            Ordering::Greater => Some(Player::Player1),
             Ordering::Less => Some(Player::Player2),
-            Ordering::Equal => None
+            Ordering::Equal => None,
         };
-        GameStatistics{ player1_points, player2_points, winner }
+        GameStatistics {
+            player1_points,
+            player2_points,
+            winner,
+        }
     }
 }
 
-fn check_coordinates(width : isize, height : isize, row : isize, col : isize) -> Option<(usize,usize)> {
-    if 0<=row && row < height && 0 <= col && col < width {
+fn check_coordinates(
+    width: isize,
+    height: isize,
+    row: isize,
+    col: isize,
+) -> Option<(usize, usize)> {
+    if 0 <= row && row < height && 0 <= col && col < width {
         return Some((row as usize, col as usize));
     }
     None

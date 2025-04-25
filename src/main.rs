@@ -25,7 +25,6 @@ impl GameManager {
 
     pub fn handle_transition(&mut self, transition: Transition) {
         self.current_game = self.current_game.transition(transition);
-        dbg!(&self.current_game);
     }
 }
 

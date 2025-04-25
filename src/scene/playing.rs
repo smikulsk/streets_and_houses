@@ -1,4 +1,5 @@
 use super::*;
+use crate::scene::prelude::*;
 
 #[derive(Debug)]
 pub struct PlayingScene {
@@ -40,7 +41,6 @@ impl PlayingScene {
         Ok(s)
     }
 
-    
     fn get_tile_size(&self, quad_ctx: &mut miniquad::Context) -> (f32, f32) {
         let (w, h) = quad_ctx.display().screen_size();
 
@@ -89,7 +89,6 @@ impl PlayingScene {
             self.spritebatch.add(p);
         }
     }
-
 }
 
 impl Scene for PlayingScene {
@@ -203,10 +202,11 @@ impl Scene for PlayingScene {
                 Err(error) => println!("Error occured:'{}'", error),
             }
         }
-        // self.board.all_is_clicked()
-        //     .then(|| Transition::ToGameOver(Box::new(self.clone())))
-        //     .or_else(|| None)
-        None
+        self.board.all_is_clicked().then(|| {
+            let game_statistics = self.board.get_statistics();
+            let game = GameOverScene::new(game_statistics);
+            Transition::ToGameOver(Box::new(game))
+        })
     }
 }
 

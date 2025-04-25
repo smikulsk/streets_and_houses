@@ -22,11 +22,12 @@ const IMAGE_HEIGHT: f32 = 167.0;
 use crate::state::marker::*;
 use crate::state::transition::*;
 
+pub mod game_pver;
 pub mod main_menu;
 pub mod playing;
 pub mod prelude;
 
-pub trait Scene : Debug {
+pub trait Scene: Debug {
     type State: GameStateMarker;
 
     fn update(
