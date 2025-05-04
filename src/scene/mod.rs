@@ -21,7 +21,7 @@ const IMAGE_HEIGHT: f32 = 167.0;
 use crate::state::marker::*;
 use crate::state::transition::*;
 
-pub mod game_pver;
+pub mod game_over;
 pub mod main_menu;
 pub mod playing;
 pub mod prelude;

@@ -1,3 +1,4 @@
+use crate::game::ai::GreadyAlgorithmPlayer;
 use crate::game::Board;
 use crate::scene::prelude::*;
 
@@ -5,9 +6,12 @@ use crate::scene::prelude::*;
 pub struct MainMenuScene {
     width: usize,
     height: usize,
+    one_player_bounding_box: Rect,
+    two_player_bounding_box: Rect,
     width_button_bounding_box: Rect,
     height_button_bounding_box: Rect,
     start_button_bounding_box: Rect,
+    one_player_game: bool,
 }
 
 impl MainMenuScene {
@@ -15,9 +19,25 @@ impl MainMenuScene {
         Self {
             width: 3,
             height: 3,
+            one_player_bounding_box: Rect::default(),
+            two_player_bounding_box: Rect::default(),
             width_button_bounding_box: Rect::default(),
             height_button_bounding_box: Rect::default(),
             start_button_bounding_box: Rect::default(),
+            one_player_game: true,
+        }
+    }
+
+    pub fn from(width : usize, height : usize, one_player_game : bool ) -> Self {
+        Self {
+            width,
+            height,
+            one_player_bounding_box: Rect::default(),
+            two_player_bounding_box: Rect::default(),
+            width_button_bounding_box: Rect::default(),
+            height_button_bounding_box: Rect::default(),
+            start_button_bounding_box: Rect::default(),
+            one_player_game,
         }
     }
 }
@@ -44,6 +64,24 @@ impl Scene for MainMenuScene {
 
         let (width, height) = graphics::drawable_size(quad_ctx);
 
+        self.one_player_bounding_box = draw_button(
+            ctx,
+            quad_ctx,
+            width / 2.0 - 65.0,
+            height / 2.0 - 120.0,
+            "One player",
+            self.one_player_game,
+        )?;
+
+        self.two_player_bounding_box = draw_button(
+            ctx,
+            quad_ctx,
+            width / 2.0 + 65.0,
+            height / 2.0 - 120.0,
+            "Two players",
+            !self.one_player_game,
+        )?;
+
         draw_text(
             ctx,
             quad_ctx,
@@ -57,6 +95,7 @@ impl Scene for MainMenuScene {
             width / 2.0,
             height / 2.0 - 60.0,
             &self.width.to_string(),
+            false,
         )?;
         draw_text(
             ctx,
@@ -71,6 +110,7 @@ impl Scene for MainMenuScene {
             width / 2.0,
             height / 2.0 - 20.0,
             &self.height.to_string(),
+            false,
         )?;
         self.start_button_bounding_box = draw_button(
             ctx,
@@ -78,6 +118,7 @@ impl Scene for MainMenuScene {
             width / 2.0,
             height / 2.0 + 40.0,
             "Click to start the game!",
+            false,
         )?;
 
         graphics::present(ctx, quad_ctx)?;
@@ -111,9 +152,28 @@ impl Scene for MainMenuScene {
                 .then(|| self.width = std::cmp::max(self.width - 1, 1));
         });
 
+        self.one_player_bounding_box.contains(point).then(|| {
+            self.one_player_game = true;
+        });
+
+        self.two_player_bounding_box.contains(point).then(|| {
+            self.one_player_game = false;
+        });
+
         self.start_button_bounding_box.contains(point).then(|| {
-            let game = PlayingScene::new(ctx, quad_ctx, Board::new(self.width, self.height))
-                .expect("board was initialized");
+            let ai_player = GreadyAlgorithmPlayer::default();
+            let game_mode = if self.one_player_game {
+                GameMode::OnePlayer(Box::new(ai_player))
+            } else {
+                GameMode::TwoPlayer
+            };
+            let game = PlayingScene::new(
+                ctx,
+                quad_ctx,
+                Board::new(self.width, self.height),
+                game_mode,
+            )
+            .expect("board was initialized");
             Transition::ToPlaying(Box::new(game))
         })
     }

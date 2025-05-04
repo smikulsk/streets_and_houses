@@ -1,17 +1,20 @@
 use std::cmp::Ordering;
 
+pub mod ai;
 pub mod controller;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Player {
     Player1,
     Player2,
+    CPU,
 }
 
 #[derive(Debug, Clone)]
 pub struct GameStatistics {
     pub player1_points: usize,
     pub player2_points: usize,
+    pub cpu_points: usize,
     pub winner: Option<Player>,
 }
 
@@ -36,7 +39,7 @@ impl Cell {
 pub struct Wall {
     _id: (usize, usize),
     pub is_clicked: bool,
-    adjacent_cells: Vec<(usize, usize)>,
+    pub adjacent_cells: Vec<(usize, usize)>,
 }
 
 impl Wall {
@@ -177,16 +180,34 @@ impl Board {
                     .count()
             })
             .sum::<usize>();
+        let cpu_points = self
+            .cells
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .filter(|cell| cell.owner == Some(Player::CPU))
+                    .count()
+            })
+            .sum::<usize>();
         let winner = match player1_points.cmp(&player2_points) {
-            Ordering::Greater => Some(Player::Player1),
+            Ordering::Greater => compare_with_cpu(player1_points, cpu_points),
             Ordering::Less => Some(Player::Player2),
-            Ordering::Equal => None,
+            Ordering::Equal => compare_with_cpu(player1_points, cpu_points),
         };
         GameStatistics {
             player1_points,
             player2_points,
+            cpu_points,
             winner,
         }
+    }
+}
+
+fn compare_with_cpu(player1_points: usize, cpu_points: usize) -> Option<Player> {
+    match player1_points.cmp(&cpu_points) {
+        Ordering::Greater => Some(Player::Player1),
+        Ordering::Less => Some(Player::CPU),
+        Ordering::Equal => None,
     }
 }
 

@@ -1,5 +1,14 @@
+use ggez::timer;
+
 use super::*;
+use crate::game::{ai::*, Player};
 use crate::scene::prelude::*;
+
+#[derive(Debug)]
+pub enum GameMode {
+    OnePlayer(Box<dyn MoveGenerator>),
+    TwoPlayer,
+}
 
 #[derive(Debug)]
 pub struct PlayingScene {
@@ -10,6 +19,7 @@ pub struct PlayingScene {
     board: game::Board,
     player: game::Player,
     wall_bounding_boxes: Vec<Vec<Rect>>,
+    game_mode: GameMode,
 }
 
 impl PlayingScene {
@@ -17,6 +27,7 @@ impl PlayingScene {
         ctx: &mut Context,
         quad_ctx: &mut miniquad::GraphicsContext,
         board: Board,
+        game_mode: GameMode,
     ) -> GameResult<PlayingScene> {
         let image = graphics::Image::new(ctx, quad_ctx, "tile.png").unwrap();
         let image_clicked = graphics::Image::new(ctx, quad_ctx, "tile_clicked.png").unwrap();
@@ -37,11 +48,12 @@ impl PlayingScene {
             board,
             player: game::Player::Player1,
             wall_bounding_boxes,
+            game_mode,
         };
         Ok(s)
     }
 
-    fn get_tile_size(&self, quad_ctx: &mut miniquad::Context, footer_height : f32) -> (f32, f32) {
+    fn get_tile_size(&self, quad_ctx: &mut miniquad::Context, footer_height: f32) -> (f32, f32) {
         let (w, h) = quad_ctx.display().screen_size();
 
         (
@@ -66,7 +78,7 @@ impl PlayingScene {
             if let Some(player) = self.board.cells[row / 2][col].owner {
                 match player {
                     game::Player::Player1 => self.spritebatch_a.add(p),
-                    game::Player::Player2 => self.spritebatch_b.add(p),
+                    game::Player::Player2 | game::Player::CPU => self.spritebatch_b.add(p),
                 };
             }
         }
@@ -89,11 +101,45 @@ impl PlayingScene {
             self.spritebatch.add(p);
         }
     }
-    
-    fn draw_footer(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::Context) -> Result<Rect, ggez::GameError> {
+
+    fn draw_footer(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+    ) -> Result<Rect, ggez::GameError> {
         let (width, height) = graphics::drawable_size(quad_ctx);
-        let footer_rect = draw_text(ctx, quad_ctx, width/2.0, height - 15.0, &format!("========================= {:?} =========================", self.player))?;
+        let footer_rect = draw_text(
+            ctx,
+            quad_ctx,
+            width / 2.0,
+            height - 15.0,
+            &format!(
+                "========================= {:?} =========================",
+                self.player
+            ),
+        )?;
         Ok(footer_rect)
+    }
+
+    fn click_wall(&mut self, row: usize, col: usize) {
+        match self.board.click_wall(row, col, self.player) {
+            Ok(additional_move) => {
+                if !additional_move {
+                    match self.player {
+                        game::Player::Player1 => {
+                            self.player = match &self.game_mode {
+                                GameMode::OnePlayer(_) => game::Player::CPU,
+                                GameMode::TwoPlayer => game::Player::Player2,
+                            }
+                        }
+                        game::Player::Player2 | game::Player::CPU => {
+                            self.player = game::Player::Player1
+                        }
+                    }
+                }
+            }
+            Err(error) => println!("Error occured:'{}'", error),
+        }
     }
 }
 
@@ -102,15 +148,31 @@ impl Scene for PlayingScene {
 
     fn update(
         &mut self,
-        _ctx: &mut ggez::Context,
+        ctx: &mut ggez::Context,
         _quad_ctx: &mut event::GraphicsContext,
-    ) -> Result<Option<Transition>, ggez::GameError> {        
+    ) -> Result<Option<Transition>, ggez::GameError> {
+        if timer::ticks(ctx) % 100 == 0 {
+            if self.board.all_is_clicked() {
+                let game_statistics = self.board.get_statistics();
+                let game = GameOverScene::new(game_statistics, &self.game_mode, self.board.width, self.board.height);
+                return Ok(Some(Transition::ToGameOver(Box::new(game))));
+            }
+
+            if self.player == Player::CPU {
+                if let Some((row, col)) = match &self.game_mode {
+                    GameMode::OnePlayer(move_generator) => move_generator.next_move(&self.board),
+                    GameMode::TwoPlayer => None,
+                } {
+                    self.click_wall(row, col);
+                }
+            }
+        }
         Ok(None)
     }
-    
+
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
         graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
-        
+
         let footer_rect = self.draw_footer(ctx, quad_ctx)?;
 
         let tile_size = self.get_tile_size(quad_ctx, footer_rect.h);
@@ -147,7 +209,6 @@ impl Scene for PlayingScene {
             spritebatch.clear();
         }
 
-
         graphics::present(ctx, quad_ctx)?;
         Ok(())
     }
@@ -160,6 +221,10 @@ impl Scene for PlayingScene {
         x: f32,
         y: f32,
     ) -> Option<Transition> {
+        if self.player == Player::CPU {
+            return None;
+        }
+
         let mut clicked_wall_coords = None;
         for row in 0..2 * self.board.height + 1 {
             let max_col = if row % 2 > 0 {
@@ -181,23 +246,9 @@ impl Scene for PlayingScene {
 
         if let Some((row, col)) = clicked_wall_coords {
             //println!("Trying to click the ({},{}) wall", row, col);
-            match self.board.click_wall(row, col, self.player) {
-                Ok(additional_move) => {
-                    if !additional_move {
-                        match self.player {
-                            game::Player::Player1 => self.player = game::Player::Player2,
-                            game::Player::Player2 => self.player = game::Player::Player1,
-                        }
-                    }
-                }
-                Err(error) => println!("Error occured:'{}'", error),
-            }
+            self.click_wall(row, col);
         }
-        self.board.all_is_clicked().then(|| {
-            let game_statistics = self.board.get_statistics();
-            let game = GameOverScene::new(game_statistics);
-            Transition::ToGameOver(Box::new(game))
-        })
+        None
     }
 }
 
