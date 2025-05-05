@@ -15,12 +15,10 @@ use ggez::GameResult;
 
 use std::fmt::Debug;
 
-const IMAGE_WIDTH: f32 = 171.0;
-const IMAGE_HEIGHT: f32 = 167.0;
-
 use crate::state::marker::*;
 use crate::state::transition::*;
 
+pub mod contants;
 pub mod game_over;
 pub mod main_menu;
 pub mod playing;

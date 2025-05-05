@@ -1,3 +1,4 @@
+pub use super::contants::*;
 pub use super::game_over::*;
 pub use super::main_menu::*;
 pub use super::playing::*;

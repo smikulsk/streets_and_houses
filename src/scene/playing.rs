@@ -151,10 +151,15 @@ impl Scene for PlayingScene {
         ctx: &mut ggez::Context,
         _quad_ctx: &mut event::GraphicsContext,
     ) -> Result<Option<Transition>, ggez::GameError> {
-        if timer::ticks(ctx) % 100 == 0 {
+        if timer::ticks(ctx) % PLAYING_TICK_COUNT == 0 {
             if self.board.all_is_clicked() {
                 let game_statistics = self.board.get_statistics();
-                let game = GameOverScene::new(game_statistics, &self.game_mode, self.board.width, self.board.height);
+                let game = GameOverScene::new(
+                    game_statistics,
+                    &self.game_mode,
+                    self.board.width,
+                    self.board.height,
+                );
                 return Ok(Some(Transition::ToGameOver(Box::new(game))));
             }
 

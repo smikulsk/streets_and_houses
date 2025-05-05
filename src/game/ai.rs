@@ -1,3 +1,4 @@
+use rand::seq::IteratorRandom;
 use std::fmt::Debug;
 
 use super::*;
@@ -6,7 +7,7 @@ pub type RowType = usize;
 pub type ColType = usize;
 pub type CounterType = usize;
 
-pub trait MoveGenerator : Debug {
+pub trait MoveGenerator: Debug {
     fn next_move(&self, board: &Board) -> Option<(RowType, ColType)>;
 }
 
@@ -55,8 +56,10 @@ impl MoveGenerator for GreadyAlgorithmPlayer {
                 walls.push(WallStatistics::new(row, col, max_counter));
             }
         }
-        if let Some(wall_next_to_almost_closed_cell) =
-            walls.iter().find(|&ws| ws.max_adjacent_counter == 3)
+        if let Some(wall_next_to_almost_closed_cell) = walls
+            .iter()
+            .filter(|&ws| ws.max_adjacent_counter == 3)
+            .choose_stable(&mut rand::rng())
         {
             return Some((
                 wall_next_to_almost_closed_cell.row,
@@ -64,12 +67,19 @@ impl MoveGenerator for GreadyAlgorithmPlayer {
             ));
         }
 
-        if let Some(wall_next_to_empty_cell) = walls.iter().find(|&ws| ws.max_adjacent_counter <= 1)
+        if let Some(wall_next_to_empty_cell) = walls
+            .iter()
+            .filter(|&ws| ws.max_adjacent_counter <= 1)
+            .choose_stable(&mut rand::rng())
         {
             return Some((wall_next_to_empty_cell.row, wall_next_to_empty_cell.col));
         }
 
-        if let Some(wall) = walls.iter().find(|&ws| ws.max_adjacent_counter == 2) {
+        if let Some(wall) = walls
+            .iter()
+            .filter(|&ws| ws.max_adjacent_counter == 2)
+            .choose_stable(&mut rand::rng())
+        {
             return Some((wall.row, wall.col));
         }
 
@@ -129,20 +139,33 @@ mod gready_algorithm_player_tests {
         let _ = board.click_wall(1, 0, player);
 
         let gready_algorithm_player = GreadyAlgorithmPlayer::default();
+        let mut valid_moves: Vec<(RowType, ColType)> = vec![
+            (0, 1),
+            (1, 2),
+            (2, 1),
+            (3, 0),
+            (3, 1),
+            (3, 2),
+            (4, 0),
+            (4, 1),
+        ];
 
         // act
         let mut next_move = gready_algorithm_player.next_move(&board);
 
         // assert
-        assert_eq!(next_move, Some((0, 1))); // wall with counter 0
+        assert!(valid_moves.contains(&next_move.expect("the move is possible"))); // wall with counter 0
 
         if let Some((row, col)) = next_move {
+            // arrange
+            valid_moves.retain(|valid_move| *valid_move != (row, col));
             let _ = board.click_wall(row, col, player);
 
+            // act
             next_move = gready_algorithm_player.next_move(&board);
 
             // assert
-            assert_eq!(next_move, Some((1, 2))); // wall with counter 1
+            assert!(valid_moves.contains(&next_move.expect("the move is possible")));
         }
     }
 
@@ -157,12 +180,14 @@ mod gready_algorithm_player_tests {
         let _ = board.click_wall(2, 0, player);
         let _ = board.click_wall(4, 0, player);
 
+        let valid_moves: Vec<(RowType, ColType)> = vec![(3, 0), (3, 1)];
+
         let gready_algorithm_player = GreadyAlgorithmPlayer::default();
 
         // act
         let next_move = gready_algorithm_player.next_move(&board);
 
         // assert
-        assert_eq!(next_move, Some((3, 0)));
+        assert!(valid_moves.contains(&next_move.expect("the move is possible")));
     }
 }
