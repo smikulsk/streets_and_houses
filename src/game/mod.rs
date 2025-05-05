@@ -18,7 +18,7 @@ pub struct GameStatistics {
     pub winner: Option<Player>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Cell {
     _id: (usize, usize),
     counter: usize,
@@ -57,7 +57,7 @@ impl Wall {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Board {
     pub width: usize,
     pub height: usize,

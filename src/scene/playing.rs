@@ -4,7 +4,7 @@ use super::*;
 use crate::game::{ai::*, Player};
 use crate::scene::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GameMode {
     OnePlayer(Box<dyn MoveGenerator>),
     TwoPlayer,
@@ -20,12 +20,14 @@ pub struct PlayingScene {
     player: game::Player,
     wall_bounding_boxes: Vec<Vec<Rect>>,
     game_mode: GameMode,
+    already_drawn: bool,
 }
 
 impl PlayingScene {
     pub fn new(
         ctx: &mut Context,
         quad_ctx: &mut miniquad::GraphicsContext,
+        player: Player,
         board: Board,
         game_mode: GameMode,
     ) -> GameResult<PlayingScene> {
@@ -46,9 +48,10 @@ impl PlayingScene {
             spritebatch_a: batch_a,
             spritebatch_b: batch_b,
             board,
-            player: game::Player::Player1,
+            player,
             wall_bounding_boxes,
             game_mode,
+            already_drawn: false,
         };
         Ok(s)
     }
@@ -121,7 +124,7 @@ impl PlayingScene {
         Ok(footer_rect)
     }
 
-    fn click_wall(&mut self, row: usize, col: usize) {
+    fn click_wall(&mut self, row: usize, col: usize) -> Option<Transition> {
         match self.board.click_wall(row, col, self.player) {
             Ok(additional_move) => {
                 if !additional_move {
@@ -137,9 +140,17 @@ impl PlayingScene {
                         }
                     }
                 }
+                self.already_drawn = false;
+
+                if !self.board.all_is_clicked() {
+                    let prepare_player_scene =
+                        PreparePlayerScene::new(self.player, &self.board, &self.game_mode);
+                    return Some(Transition::ToPreparePlayer(Box::new(prepare_player_scene)));
+                }
             }
             Err(error) => println!("Error occured:'{}'", error),
         }
+        None
     }
 }
 
@@ -151,7 +162,7 @@ impl Scene for PlayingScene {
         ctx: &mut ggez::Context,
         _quad_ctx: &mut event::GraphicsContext,
     ) -> Result<Option<Transition>, ggez::GameError> {
-        if timer::ticks(ctx) % PLAYING_TICK_COUNT == 0 {
+        if self.already_drawn && timer::ticks(ctx) % PLAYING_TICK_COUNT == 0 {
             if self.board.all_is_clicked() {
                 let game_statistics = self.board.get_statistics();
                 let game = GameOverScene::new(
@@ -168,7 +179,7 @@ impl Scene for PlayingScene {
                     GameMode::OnePlayer(move_generator) => move_generator.next_move(&self.board),
                     GameMode::TwoPlayer => None,
                 } {
-                    self.click_wall(row, col);
+                    return Ok(self.click_wall(row, col));
                 }
             }
         }
@@ -215,6 +226,9 @@ impl Scene for PlayingScene {
         }
 
         graphics::present(ctx, quad_ctx)?;
+
+        self.already_drawn = true;
+
         Ok(())
     }
 
@@ -251,7 +265,7 @@ impl Scene for PlayingScene {
 
         if let Some((row, col)) = clicked_wall_coords {
             //println!("Trying to click the ({},{}) wall", row, col);
-            self.click_wall(row, col);
+            return self.click_wall(row, col);
         }
         None
     }

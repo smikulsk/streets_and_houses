@@ -23,6 +23,7 @@ pub mod game_over;
 pub mod main_menu;
 pub mod playing;
 pub mod prelude;
+pub mod prepare_player;
 
 pub trait Scene: Debug {
     type State: GameStateMarker;

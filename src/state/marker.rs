@@ -4,6 +4,8 @@ pub trait GameStateMarker : std::fmt::Debug {}
 #[derive(Debug, Clone)]
 pub struct MainMenuState;
 #[derive(Debug, Clone)]
+pub struct PreparePlayerState;
+#[derive(Debug, Clone)]
 pub struct PlayingState;
 #[derive(Debug, Clone)]
 pub struct PausedState;
@@ -13,6 +15,7 @@ pub struct GameOverState;
 pub struct SettingsState;
 
 impl GameStateMarker for MainMenuState {}
+impl GameStateMarker for PreparePlayerState {}
 impl GameStateMarker for PlayingState {}
 impl GameStateMarker for PausedState {}
 impl GameStateMarker for GameOverState {}

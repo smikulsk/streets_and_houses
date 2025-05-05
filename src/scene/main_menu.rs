@@ -127,8 +127,8 @@ impl Scene for MainMenuScene {
 
     fn mouse_button_up_event(
         &mut self,
-        ctx: &mut ggez::Context,
-        quad_ctx: &mut ggez::miniquad::GraphicsContext,
+        _ctx: &mut ggez::Context,
+        _quad_ctx: &mut ggez::miniquad::GraphicsContext,
         button: ggez::event::MouseButton,
         x: f32,
         y: f32,
@@ -167,14 +167,12 @@ impl Scene for MainMenuScene {
             } else {
                 GameMode::TwoPlayer
             };
-            let game = PlayingScene::new(
-                ctx,
-                quad_ctx,
-                Board::new(self.width, self.height),
-                game_mode,
-            )
-            .expect("board was initialized");
-            Transition::ToPlaying(Box::new(game))
+            let game = PreparePlayerScene::new(
+                game::Player::Player1,
+                &Board::new(self.width, self.height),
+                &game_mode,
+            );
+            Transition::ToPreparePlayer(Box::new(game))
         })
     }
 }

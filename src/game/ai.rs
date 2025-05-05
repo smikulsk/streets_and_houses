@@ -1,3 +1,5 @@
+use dyn_clone::DynClone;
+
 use rand::seq::IteratorRandom;
 use std::fmt::Debug;
 
@@ -7,9 +9,11 @@ pub type RowType = usize;
 pub type ColType = usize;
 pub type CounterType = usize;
 
-pub trait MoveGenerator: Debug {
+pub trait MoveGenerator: Debug + DynClone {
     fn next_move(&self, board: &Board) -> Option<(RowType, ColType)>;
 }
+
+dyn_clone::clone_trait_object!(MoveGenerator);
 
 #[derive(Debug)]
 struct WallStatistics {
@@ -28,7 +32,7 @@ impl WallStatistics {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct GreadyAlgorithmPlayer {}
 
 impl MoveGenerator for GreadyAlgorithmPlayer {

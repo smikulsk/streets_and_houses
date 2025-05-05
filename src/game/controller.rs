@@ -54,6 +54,9 @@ impl Game<MainMenuState> {
 
     pub fn transition(self, transition: Transition) -> Box<dyn GameInstance> {
         match transition {
+            Transition::ToPreparePlayer(scene) => Box::new(Game {
+                current_scene: scene,
+            }),
             Transition::ToPlaying(scene) => Box::new(Game {
                 current_scene: scene,
             }),
@@ -71,12 +74,29 @@ impl Default for Game<MainMenuState> {
     }
 }
 
+impl Game<PreparePlayerState> {
+    pub fn transition(self, transition: Transition) -> Box<dyn GameInstance> {
+        match transition {
+            Transition::ToPlaying(scene) => Box::new(Game {
+                current_scene: scene,
+            }),
+            // Transition::ToSettings(scene) => Box::new(Game {
+            //     current_scene: scene,
+            // }),
+            _ => Box::new(self),
+        }
+    }
+}
+
 impl Game<PlayingState> {
     pub fn transition(self, transition: Transition) -> Box<dyn GameInstance> {
         match transition {
             // Transition::ToPaused(scene) => Box::new(Game {
             //     current_scene: scene,
             // }),
+            Transition::ToPreparePlayer(scene) => Box::new(Game {
+                current_scene: scene,
+            }),
             Transition::ToGameOver(scene) => Box::new(Game {
                 current_scene: scene,
             }),
@@ -132,6 +152,9 @@ impl<S: GameStateMarker + 'static> GameInstance for Game<S> {
     fn transition(&self, transition: Transition) -> Box<dyn GameInstance> {
         match transition {
             Transition::ToMainMenu(scene) => Box::new(Game {
+                current_scene: scene,
+            }),
+            Transition::ToPreparePlayer(scene) => Box::new(Game {
                 current_scene: scene,
             }),
             Transition::ToPlaying(scene) => Box::new(Game {

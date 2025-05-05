@@ -7,6 +7,7 @@ use super::marker::*;
 pub enum Transition {
     ToMainMenu(Box<dyn Scene<State = MainMenuState>>),
     ToPlaying(Box<dyn Scene<State = PlayingState>>),
+    ToPreparePlayer(Box<dyn Scene<State = PreparePlayerState>>),
     //ToPaused(Box<dyn Scene<State = PausedState>>),
     ToGameOver(Box<dyn Scene<State = GameOverState>>),
     //ToSettings(Box<dyn Scene<State = SettingsState>>),
