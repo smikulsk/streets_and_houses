@@ -1,0 +1,33 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+            echo "Attempting to add wasm32-unknown-unknown target"
+            rustup target add wasm32-unknown-unknown
+            echo "Successfully added wasm32-unknown-unknown target"
+            echo "Attempting to build the game"
+            cargo build --target wasm32-unknown-unknown
+            echo "Successfully build the game and complied to WebAssembly"
+            echo "Copy WebAssembly to web folder"
+            copy target/wasm32-unknown-unknown/release/streets_and_houses.wasm web/streets_and_houses.wasm
+    - name: "Upload to GitHub pages branch gh-pages"
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        branch: gh-pages
+        folder: web
