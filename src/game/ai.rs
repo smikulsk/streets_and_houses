@@ -1,6 +1,6 @@
 use dyn_clone::DynClone;
 
-use rand::seq::IteratorRandom;
+use quad_rand::ChooseRandom;
 use std::fmt::Debug;
 
 use super::*;
@@ -60,10 +60,8 @@ impl MoveGenerator for GreadyAlgorithmPlayer {
                 walls.push(WallStatistics::new(row, col, max_counter));
             }
         }
-        if let Some(wall_next_to_almost_closed_cell) = walls
-            .iter()
-            .filter(|&ws| ws.max_adjacent_counter == 3)
-            .choose_stable(&mut rand::rng())
+        if let Some(wall_next_to_almost_closed_cell) =
+            choose_wall_index(&walls, |&ws| ws.max_adjacent_counter == 3)
         {
             return Some((
                 wall_next_to_almost_closed_cell.row,
@@ -71,24 +69,28 @@ impl MoveGenerator for GreadyAlgorithmPlayer {
             ));
         }
 
-        if let Some(wall_next_to_empty_cell) = walls
-            .iter()
-            .filter(|&ws| ws.max_adjacent_counter <= 1)
-            .choose_stable(&mut rand::rng())
+        if let Some(wall_next_to_empty_cell) =
+            choose_wall_index(&walls, |&ws| ws.max_adjacent_counter <= 1)
         {
             return Some((wall_next_to_empty_cell.row, wall_next_to_empty_cell.col));
         }
 
-        if let Some(wall) = walls
-            .iter()
-            .filter(|&ws| ws.max_adjacent_counter == 2)
-            .choose_stable(&mut rand::rng())
-        {
+        if let Some(wall) = choose_wall_index(&walls, |&ws| ws.max_adjacent_counter == 2) {
             return Some((wall.row, wall.col));
         }
 
         unreachable!("We should fill all the cases by now!!!")
     }
+}
+
+fn choose_wall_index<T>(walls: &[T], filter_condition: impl FnMut(&&T) -> bool) -> Option<&T> {
+    walls
+        .iter()
+        .filter(filter_condition)
+        .collect::<Vec<_>>()
+        .as_slice()
+        .choose()
+        .copied()
 }
 
 #[cfg(test)]

@@ -2,6 +2,7 @@ extern crate good_web_game as ggez;
 
 use ggez::event;
 use ggez::miniquad;
+use ggez::timer::time;
 use ggez::Context;
 use ggez::GameResult;
 
@@ -68,6 +69,7 @@ impl event::EventHandler<ggez::GameError> for GameManager {
 }
 
 pub fn main() -> GameResult {
+    init_random();
     ggez::start(
         ggez::conf::Conf::default()
             .cache(Some(include_bytes!("resources.tar")))
@@ -76,4 +78,9 @@ pub fn main() -> GameResult {
             .window_title("Streets'n'Houses".to_string()),
         |_context, _quad_ctx| Box::new(GameManager::new()),
     )
+}
+
+fn init_random() {
+    let time = time() * 10_000_000.0;
+    quad_rand::srand(time as u64);
 }
