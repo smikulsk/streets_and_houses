@@ -21,6 +21,7 @@ pub struct PlayingScene {
     wall_bounding_boxes: Vec<Vec<Rect>>,
     game_mode: GameMode,
     already_drawn: bool,
+    deferred_transition: Option<Transition>,
 }
 
 impl PlayingScene {
@@ -52,6 +53,7 @@ impl PlayingScene {
             wall_bounding_boxes,
             game_mode,
             already_drawn: false,
+            deferred_transition: None,
         };
         Ok(s)
     }
@@ -124,33 +126,29 @@ impl PlayingScene {
         Ok(footer_rect)
     }
 
-    fn click_wall(&mut self, row: usize, col: usize) -> Option<Transition> {
+    fn click_wall(&mut self, row: usize, col: usize) {
         match self.board.click_wall(row, col, self.player) {
             Ok(additional_move) => {
                 if !additional_move {
-                    match self.player {
-                        game::Player::Player1 => {
-                            self.player = match &self.game_mode {
-                                GameMode::OnePlayer(_) => game::Player::CPU,
-                                GameMode::TwoPlayer => game::Player::Player2,
-                            }
-                        }
-                        game::Player::Player2 | game::Player::CPU => {
-                            self.player = game::Player::Player1
-                        }
+                    let new_player = match self.player {
+                        game::Player::Player1 => match &self.game_mode {
+                            GameMode::OnePlayer(_) => game::Player::CPU,
+                            GameMode::TwoPlayer => game::Player::Player2,
+                        },
+                        game::Player::Player2 | game::Player::CPU => game::Player::Player1,
+                    };
+
+                    if !self.board.all_is_clicked() {
+                        let prepare_player_scene =
+                            PreparePlayerScene::new(new_player, &self.board, &self.game_mode);
+                        self.deferred_transition =
+                            Some(Transition::ToPreparePlayer(Box::new(prepare_player_scene)));
                     }
                 }
                 self.already_drawn = false;
-
-                if !self.board.all_is_clicked() {
-                    let prepare_player_scene =
-                        PreparePlayerScene::new(self.player, &self.board, &self.game_mode);
-                    return Some(Transition::ToPreparePlayer(Box::new(prepare_player_scene)));
-                }
             }
-            Err(error) => println!("Error occured:'{}'", error),
+            Err(error) => println!("Error occurred: '{}'", error),
         }
-        None
     }
 }
 
@@ -163,6 +161,10 @@ impl Scene for PlayingScene {
         _quad_ctx: &mut event::GraphicsContext,
     ) -> Result<Option<Transition>, ggez::GameError> {
         if self.already_drawn && timer::ticks(ctx) % PLAYING_TICK_COUNT == 0 {
+            if let Some(transition) = self.deferred_transition.take() {
+                return Ok(Some(transition));
+            }
+
             if self.board.all_is_clicked() {
                 let game_statistics = self.board.get_statistics();
                 let game = GameOverScene::new(
@@ -179,7 +181,7 @@ impl Scene for PlayingScene {
                     GameMode::OnePlayer(move_generator) => move_generator.next_move(&self.board),
                     GameMode::TwoPlayer => None,
                 } {
-                    return Ok(self.click_wall(row, col));
+                    self.click_wall(row, col);
                 }
             }
         }
@@ -244,7 +246,6 @@ impl Scene for PlayingScene {
             return None;
         }
 
-        let mut clicked_wall_coords = None;
         for row in 0..2 * self.board.height + 1 {
             let max_col = if row % 2 > 0 {
                 self.board.width + 1
@@ -254,18 +255,10 @@ impl Scene for PlayingScene {
             for col in 0..max_col {
                 let rect = self.wall_bounding_boxes[row][col];
                 if rect.contains(Point2::new(x, y)) {
-                    clicked_wall_coords = Some((row, col));
-                    break;
+                    self.click_wall(row, col);
+                    return None;
                 }
             }
-            if clicked_wall_coords.is_some() {
-                break;
-            }
-        }
-
-        if let Some((row, col)) = clicked_wall_coords {
-            //println!("Trying to click the ({},{}) wall", row, col);
-            return self.click_wall(row, col);
         }
         None
     }

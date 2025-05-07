@@ -8,7 +8,7 @@ pub struct PreparePlayerScene {
     player: Player,
     board: Board,
     game_mode: GameMode,
-    start_time : Instant,
+    start_time: Option<Instant>,
 }
 
 impl PreparePlayerScene {
@@ -17,7 +17,7 @@ impl PreparePlayerScene {
             player,
             board: board.clone(),
             game_mode: game_mode.clone(),
-            start_time :Instant::now()
+            start_time: None,
         }
     }
 }
@@ -30,17 +30,22 @@ impl Scene for PreparePlayerScene {
         ctx: &mut ggez::Context,
         quad_ctx: &mut ggez::event::GraphicsContext,
     ) -> Result<Option<Transition>, ggez::GameError> {
-        if self.start_time.elapsed() >= Duration::from_secs_f32(PREPARE_PLAYER_DURATION) {
-            let game = PlayingScene::new(
-                ctx,
-                quad_ctx,
-                self.player,
-                self.board.clone(),
-                self.game_mode.clone(),
-            )
-            .expect("board was initialized");
-            
-            return Ok(Some(Transition::ToPlaying(Box::new(game))));
+        if self.start_time.is_none() {
+            self.start_time = Some(Instant::now());
+        }
+        if let Some(start_time) = self.start_time {
+            if start_time.elapsed() >= Duration::from_secs_f32(PREPARE_PLAYER_DURATION) {
+                let game = PlayingScene::new(
+                    ctx,
+                    quad_ctx,
+                    self.player,
+                    self.board.clone(),
+                    self.game_mode.clone(),
+                )
+                .expect("board was initialized");
+
+                return Ok(Some(Transition::ToPlaying(Box::new(game))));
+            }
         }
         Ok(None)
     }
