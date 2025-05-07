@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crate::game::Player;
 use crate::scene::prelude::*;
@@ -8,7 +8,7 @@ pub struct PreparePlayerScene {
     player: Player,
     board: Board,
     game_mode: GameMode,
-    start_time: Option<Instant>,
+    start_time: Option<Duration>,
 }
 
 impl PreparePlayerScene {
@@ -31,10 +31,10 @@ impl Scene for PreparePlayerScene {
         quad_ctx: &mut ggez::event::GraphicsContext,
     ) -> Result<Option<Transition>, ggez::GameError> {
         if self.start_time.is_none() {
-            self.start_time = Some(Instant::now());
+            self.start_time = Some(get_time());
         }
         if let Some(start_time) = self.start_time {
-            if start_time.elapsed() >= Duration::from_secs_f32(PREPARE_PLAYER_DURATION) {
+            if start_time.abs_diff(get_time()) >= Duration::from_secs_f32(PREPARE_PLAYER_DURATION) {
                 let game = PlayingScene::new(
                     ctx,
                     quad_ctx,
@@ -77,4 +77,8 @@ impl Scene for PreparePlayerScene {
     ) -> Option<Transition> {
         None
     }
+}
+
+fn get_time() -> Duration {
+    ggez::timer::f64_to_duration(ggez::timer::time())
 }
