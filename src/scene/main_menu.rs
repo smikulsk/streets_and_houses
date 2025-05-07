@@ -8,8 +8,10 @@ pub struct MainMenuScene {
     height: usize,
     one_player_bounding_box: Rect,
     two_player_bounding_box: Rect,
-    width_button_bounding_box: Rect,
-    height_button_bounding_box: Rect,
+    width_decr_button_bounding_box: Rect,
+    width_incr_button_bounding_box: Rect,
+    height_decr_button_bounding_box: Rect,
+    height_incr_button_bounding_box: Rect,
     start_button_bounding_box: Rect,
     one_player_game: bool,
 }
@@ -21,21 +23,25 @@ impl MainMenuScene {
             height: 3,
             one_player_bounding_box: Rect::default(),
             two_player_bounding_box: Rect::default(),
-            width_button_bounding_box: Rect::default(),
-            height_button_bounding_box: Rect::default(),
+            width_decr_button_bounding_box: Rect::default(),
+            width_incr_button_bounding_box: Rect::default(),
+            height_decr_button_bounding_box: Rect::default(),
+            height_incr_button_bounding_box: Rect::default(),
             start_button_bounding_box: Rect::default(),
             one_player_game: true,
         }
     }
 
-    pub fn from(width : usize, height : usize, one_player_game : bool ) -> Self {
+    pub fn from(width: usize, height: usize, one_player_game: bool) -> Self {
         Self {
             width,
             height,
             one_player_bounding_box: Rect::default(),
             two_player_bounding_box: Rect::default(),
-            width_button_bounding_box: Rect::default(),
-            height_button_bounding_box: Rect::default(),
+            width_decr_button_bounding_box: Rect::default(),
+            width_incr_button_bounding_box: Rect::default(),
+            height_decr_button_bounding_box: Rect::default(),
+            height_incr_button_bounding_box: Rect::default(),
             start_button_bounding_box: Rect::default(),
             one_player_game,
         }
@@ -89,14 +95,17 @@ impl Scene for MainMenuScene {
             height / 2.0 - 60.0,
             "Width:",
         )?;
-        self.width_button_bounding_box = draw_button(
+        self.width_decr_button_bounding_box =
+            draw_button(ctx, quad_ctx, width / 2.0, height / 2.0 - 60.0, "-", false)?;
+        draw_text(
             ctx,
             quad_ctx,
-            width / 2.0,
+            width / 2.0 + 30.0,
             height / 2.0 - 60.0,
             &self.width.to_string(),
-            false,
         )?;
+        self.width_incr_button_bounding_box =
+            draw_button(ctx, quad_ctx, width / 2.0 + 60.0, height / 2.0 - 60.0, "+", false)?;
         draw_text(
             ctx,
             quad_ctx,
@@ -104,12 +113,21 @@ impl Scene for MainMenuScene {
             height / 2.0 - 20.0,
             "Height:",
         )?;
-        self.height_button_bounding_box = draw_button(
+        self.height_decr_button_bounding_box =
+            draw_button(ctx, quad_ctx, width / 2.0, height / 2.0 - 20.0, "-", false)?;
+        draw_text(
             ctx,
             quad_ctx,
-            width / 2.0,
+            width / 2.0 + 30.0,
             height / 2.0 - 20.0,
             &self.height.to_string(),
+        )?;
+        self.height_incr_button_bounding_box = draw_button(
+            ctx,
+            quad_ctx,
+            width / 2.0 + 60.0,
+            height / 2.0 - 20.0,
+            "+",
             false,
         )?;
         self.start_button_bounding_box = draw_button(
@@ -129,28 +147,34 @@ impl Scene for MainMenuScene {
         &mut self,
         _ctx: &mut ggez::Context,
         _quad_ctx: &mut ggez::miniquad::GraphicsContext,
-        button: ggez::event::MouseButton,
+        _button: ggez::event::MouseButton,
         x: f32,
         y: f32,
     ) -> Option<Transition> {
         let point = Point2::new(x, y);
-        self.height_button_bounding_box.contains(point).then(|| {
-            button
-                .eq(&event::MouseButton::Left)
-                .then(|| self.height = std::cmp::min(self.height + 1, 9));
-            button
-                .eq(&event::MouseButton::Right)
-                .then(|| self.height = std::cmp::max(self.height - 1, 1));
-        });
+        self.height_decr_button_bounding_box
+            .contains(point)
+            .then(|| {
+                self.height = std::cmp::max(self.height - 1, 1);
+            });
 
-        self.width_button_bounding_box.contains(point).then(|| {
-            button
-                .eq(&event::MouseButton::Left)
-                .then(|| self.width = std::cmp::min(self.width + 1, 9));
-            button
-                .eq(&event::MouseButton::Right)
-                .then(|| self.width = std::cmp::max(self.width - 1, 1));
-        });
+        self.height_incr_button_bounding_box
+            .contains(point)
+            .then(|| {
+                self.height = std::cmp::min(self.height + 1, 9);
+            });
+
+        self.width_decr_button_bounding_box
+            .contains(point)
+            .then(|| {
+                self.width = std::cmp::max(self.width - 1, 1);
+            });
+
+        self.width_incr_button_bounding_box
+            .contains(point)
+            .then(|| {
+                self.width = std::cmp::min(self.width + 1, 9);
+            });
 
         self.one_player_bounding_box.contains(point).then(|| {
             self.one_player_game = true;
