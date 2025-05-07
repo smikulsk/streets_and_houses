@@ -1218,7 +1218,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213701ba3370744dcd1a12960caa4843b3d68b4d1c0a5d575e0d65b2ee9d16c0"
 
 [[package]]
-name = "streets_and_boxes"
+name = "streets_and_houses"
 version = "0.1.0"
 dependencies = [
  "dyn-clone",
