@@ -1,4 +1,4 @@
-name: Rust
+name: Build Streets and Houses
 
 on:
   push:
@@ -22,10 +22,11 @@ jobs:
             rustup target add wasm32-unknown-unknown
             echo "Successfully added wasm32-unknown-unknown target"
             echo "Attempting to build the game"
-            cargo build --target wasm32-unknown-unknown
+            cargo build --target wasm32-unknown-unknown --release
             echo "Successfully build the game and complied to WebAssembly"
-            echo "Copy WebAssembly to web folder"
-            copy target/wasm32-unknown-unknown/release/streets_and_houses.wasm web/streets_and_houses.wasm
+            echo "Copy game WebAssembly to web folder"
+            cp target/wasm32-unknown-unknown/release/streets_and_houses.wasm web/streets_and_houses.wasm
+            echo "Successfully copied the game WebAssembly to web folder"
     - name: "Upload to GitHub pages branch gh-pages"
       uses: JamesIves/github-pages-deploy-action@v4
       with:
