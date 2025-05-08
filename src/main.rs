@@ -71,11 +71,10 @@ impl event::EventHandler<ggez::GameError> for GameManager {
     fn resize_event(
             &mut self,
             ctx: &mut Context,
-            quad_ctx: &mut miniquad::Context,
+            _quad_ctx: &mut miniquad::Context,
             width: f32,
             height: f32,
         ) {
-        ggez::graphics::set_drawable_size(quad_ctx, width as u32, height as u32);
         ggez::graphics::set_screen_coordinates(ctx, Rect::new(0.0, 0.0, width, height))
             .expect("Failed to set screen coordinates");
     }
