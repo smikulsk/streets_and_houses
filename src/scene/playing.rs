@@ -73,31 +73,60 @@ impl PlayingScene {
     fn get_tile_size(&self, quad_ctx: &mut miniquad::Context, footer_height: f32) -> (f32, f32) {
         let (w, h) = quad_ctx.display().screen_size();
 
+        let tile_size_x = IMAGE_WIDTH * w
+            / ((IMAGE_WIDTH + V_STREET_WIDTH) * self.board.width as f32 + V_STREET_WIDTH);
+        let tile_size_y = IMAGE_HEIGHT * (h - footer_height)
+            / ((IMAGE_HEIGHT + H_STREET_HEIGHT) * self.board.height as f32 + H_STREET_HEIGHT);
+
+        if tile_size_x > tile_size_y {
+            return (tile_size_y, tile_size_y);
+        }
+        (tile_size_x, tile_size_x)
+    }
+
+    fn get_translation(
+        &self,
+        quad_ctx: &mut miniquad::Context,
+        footer_height: f32,
+        tile_size: (f32, f32),
+    ) -> (f32, f32) {
+        let (w, h) = quad_ctx.display().screen_size();
+
         (
-            (IMAGE_WIDTH as usize * w as usize
-                / ((IMAGE_WIDTH as usize + V_STREET_WIDTH as usize) * self.board.width
-                    + V_STREET_WIDTH as usize)) as f32,
-            (IMAGE_HEIGHT as usize * (h - footer_height) as usize
-                / ((IMAGE_HEIGHT as usize + H_STREET_HEIGHT as usize) * self.board.height
-                    + H_STREET_HEIGHT as usize)) as f32,
+            (w - ((IMAGE_WIDTH + V_STREET_WIDTH) * self.board.width as f32 + V_STREET_WIDTH)
+                / IMAGE_WIDTH
+                * tile_size.0)
+                / 2.0,
+            (h - footer_height
+                - ((IMAGE_HEIGHT + H_STREET_HEIGHT) * self.board.height as f32 + H_STREET_HEIGHT)
+                    / IMAGE_WIDTH
+                    * tile_size.1)
+                / 2.0,
         )
     }
 
-    fn add_cell_sprite(&mut self, tile_size: (f32, f32), row: usize, col: usize) {
+    fn add_cell_sprite(
+        &mut self,
+        tile_size: (f32, f32),
+        translation: (f32, f32),
+        row: usize,
+        col: usize,
+    ) {
         let r = row as f32;
         let c = col as f32;
         let p = graphics::DrawParam::new()
             .dest(Point2::new(
                 tile_size.0 * V_STREET_WIDTH / IMAGE_WIDTH
-                    + (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH,
+                    + (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH + translation.0,
                 ((IMAGE_HEIGHT + H_STREET_HEIGHT) * r / 2.0 / IMAGE_HEIGHT
                     + H_STREET_HEIGHT / IMAGE_HEIGHT)
-                    * tile_size.1,
+                    * tile_size.1 + translation.1,
             ))
             .scale(Vector2::new(
                 tile_size.0 / IMAGE_WIDTH,
                 tile_size.1 / IMAGE_HEIGHT,
             ));
+
         if row < 2 * self.board.height {
             if let Some(player) = self.board.cells[row / 2][col].owner {
                 match player {
@@ -149,8 +178,8 @@ impl PlayingScene {
                 "========================= {:?} =========================",
                 self.player
             ),
-        )?;
-        Ok(footer_rect)
+        )?;        
+        Ok(Rect::new(footer_rect.x, footer_rect.y, footer_rect.w, footer_rect.h + 15.0))
     }
 
     fn click_wall(&mut self, row: usize, col: usize) {
@@ -221,23 +250,26 @@ impl Scene for PlayingScene {
         let footer_rect = self.draw_footer(ctx, quad_ctx)?;
 
         let tile_size = self.get_tile_size(quad_ctx, footer_rect.h);
+        let translation = self.get_translation(quad_ctx, footer_rect.h, tile_size);
 
         for row in 0..2 * self.board.height + 1 {
             if row % 2 == 0 {
                 for col in 0..self.board.width {
-                    let dest = get_horizontal_wall_sprite_destination(tile_size, row, col);
+                    let dest =
+                        get_horizontal_wall_sprite_destination(tile_size, translation, row, col);
                     self.add_wall_sprite(tile_size, row, col, dest);
                     self.wall_bounding_boxes[row][col] =
-                        get_horizontal_wall_sprite_bounding_box(tile_size, row, col);
+                        get_horizontal_wall_sprite_bounding_box(tile_size, translation, row, col);
 
-                    self.add_cell_sprite(tile_size, row, col);
+                    self.add_cell_sprite(tile_size, translation, row, col);
                 }
             } else {
                 for col in 0..self.board.width + 1 {
-                    let dest = get_vertical_wall_sprite_destination(tile_size, row, col);
+                    let dest =
+                        get_vertical_wall_sprite_destination(tile_size, translation, row, col);
                     self.add_wall_sprite(tile_size, row, col, dest);
                     self.wall_bounding_boxes[row][col] =
-                        get_vertical_wall_sprite_bounding_box(tile_size, row, col);
+                        get_vertical_wall_sprite_bounding_box(tile_size, translation, row, col);
                 }
             }
         }
@@ -294,6 +326,7 @@ impl Scene for PlayingScene {
 
 fn get_horizontal_wall_sprite_destination(
     tile_size: (f32, f32),
+    translation: (f32, f32),
     row: usize,
     col: usize,
 ) -> Point2<f32> {
@@ -302,17 +335,24 @@ fn get_horizontal_wall_sprite_destination(
 
     Point2::new(
         V_STREET_WIDTH * tile_size.0 / IMAGE_WIDTH
-            + (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH,
-        (IMAGE_HEIGHT + H_STREET_HEIGHT) * r * tile_size.1 / 2.0 / IMAGE_HEIGHT,
+            + (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH
+            + translation.0,
+        (IMAGE_HEIGHT + H_STREET_HEIGHT) * r * tile_size.1 / 2.0 / IMAGE_HEIGHT + translation.1,
     )
 }
 
-fn get_horizontal_wall_sprite_bounding_box(tile_size: (f32, f32), row: usize, col: usize) -> Rect {
+fn get_horizontal_wall_sprite_bounding_box(
+    tile_size: (f32, f32),
+    translation: (f32, f32),
+    row: usize,
+    col: usize,
+) -> Rect {
     let r = row as f32;
     let c = col as f32;
     Rect::new(
-        ((IMAGE_WIDTH + V_STREET_WIDTH) * c + V_STREET_WIDTH) * tile_size.0 / IMAGE_WIDTH,
-        (IMAGE_HEIGHT + H_STREET_HEIGHT) * r * tile_size.1 / 2.0 / IMAGE_HEIGHT,
+        ((IMAGE_WIDTH + V_STREET_WIDTH) * c + V_STREET_WIDTH) * tile_size.0 / IMAGE_WIDTH
+            + translation.0,
+        (IMAGE_HEIGHT + H_STREET_HEIGHT) * r * tile_size.1 / 2.0 / IMAGE_HEIGHT + translation.1,
         tile_size.0,
         tile_size.1 * H_STREET_HEIGHT / IMAGE_HEIGHT,
     )
@@ -320,6 +360,7 @@ fn get_horizontal_wall_sprite_bounding_box(tile_size: (f32, f32), row: usize, co
 
 fn get_vertical_wall_sprite_destination(
     tile_size: (f32, f32),
+    translation: (f32, f32),
     row: usize,
     col: usize,
 ) -> Point2<f32> {
@@ -327,19 +368,26 @@ fn get_vertical_wall_sprite_destination(
     let c = col as f32;
 
     Point2::new(
-        (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH,
+        (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH + translation.0,
         H_STREET_HEIGHT * tile_size.1 / IMAGE_HEIGHT
-            + (IMAGE_HEIGHT + H_STREET_HEIGHT) * (r - 1.0) * tile_size.1 / 2.0 / IMAGE_HEIGHT,
+            + (IMAGE_HEIGHT + H_STREET_HEIGHT) * (r - 1.0) * tile_size.1 / 2.0 / IMAGE_HEIGHT
+            + translation.1,
     )
 }
 
-fn get_vertical_wall_sprite_bounding_box(tile_size: (f32, f32), row: usize, col: usize) -> Rect {
+fn get_vertical_wall_sprite_bounding_box(
+    tile_size: (f32, f32),
+    translation: (f32, f32),
+    row: usize,
+    col: usize,
+) -> Rect {
     let r = row as f32;
     let c = col as f32;
     Rect::new(
-        (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH,
+        (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH + translation.0,
         H_STREET_HEIGHT * tile_size.1 / IMAGE_HEIGHT
-            + (IMAGE_HEIGHT + H_STREET_HEIGHT) * (r - 1.0) * tile_size.1 / 2.0 / IMAGE_HEIGHT,
+            + (IMAGE_HEIGHT + H_STREET_HEIGHT) * (r - 1.0) * tile_size.1 / 2.0 / IMAGE_HEIGHT
+            + translation.1,
         tile_size.0 * V_STREET_WIDTH / IMAGE_WIDTH,
         tile_size.1,
     )
