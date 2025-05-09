@@ -117,10 +117,12 @@ impl PlayingScene {
         let p = graphics::DrawParam::new()
             .dest(Point2::new(
                 tile_size.0 * V_STREET_WIDTH / IMAGE_WIDTH
-                    + (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH + translation.0,
+                    + (IMAGE_WIDTH + V_STREET_WIDTH) * c * tile_size.0 / IMAGE_WIDTH
+                    + translation.0,
                 ((IMAGE_HEIGHT + H_STREET_HEIGHT) * r / 2.0 / IMAGE_HEIGHT
                     + H_STREET_HEIGHT / IMAGE_HEIGHT)
-                    * tile_size.1 + translation.1,
+                    * tile_size.1
+                    + translation.1,
             ))
             .scale(Vector2::new(
                 tile_size.0 / IMAGE_WIDTH,
@@ -178,11 +180,22 @@ impl PlayingScene {
                 "========================= {:?} =========================",
                 self.player
             ),
-        )?;        
-        Ok(Rect::new(footer_rect.x, footer_rect.y, footer_rect.w, footer_rect.h + 15.0))
+        )?;
+        Ok(Rect::new(
+            footer_rect.x,
+            footer_rect.y,
+            footer_rect.w,
+            footer_rect.h + 15.0,
+        ))
     }
 
-    fn click_wall(&mut self, row: usize, col: usize) {
+    fn click_wall(
+        &mut self,
+        ctx: &mut ggez::Context,
+        quad_ctx: &mut event::GraphicsContext,
+        row: usize,
+        col: usize,
+    ) {
         match self.board.click_wall(row, col, self.player) {
             Ok(additional_move) => {
                 if !additional_move {
@@ -195,8 +208,13 @@ impl PlayingScene {
                     };
 
                     if !self.board.all_is_clicked() {
-                        let prepare_player_scene =
-                            PreparePlayerScene::new(new_player, &self.board, &self.game_mode);
+                        let prepare_player_scene = PreparePlayerScene::new(
+                            ctx,
+                            quad_ctx,
+                            new_player,
+                            &self.board,
+                            &self.game_mode,
+                        );
                         self.deferred_transition =
                             Some(Transition::ToPreparePlayer(Box::new(prepare_player_scene)));
                     }
@@ -214,7 +232,7 @@ impl Scene for PlayingScene {
     fn update(
         &mut self,
         ctx: &mut ggez::Context,
-        _quad_ctx: &mut event::GraphicsContext,
+        quad_ctx: &mut event::GraphicsContext,
     ) -> Result<Option<Transition>, ggez::GameError> {
         if self.already_drawn && timer::ticks(ctx) % PLAYING_TICK_COUNT == 0 {
             if let Some(transition) = self.deferred_transition.take() {
@@ -237,7 +255,7 @@ impl Scene for PlayingScene {
                     GameMode::OnePlayer(move_generator) => move_generator.next_move(&self.board),
                     GameMode::TwoPlayer => None,
                 } {
-                    self.click_wall(row, col);
+                    self.click_wall(ctx, quad_ctx, row, col);
                 }
             }
         }
@@ -296,8 +314,8 @@ impl Scene for PlayingScene {
 
     fn mouse_button_up_event(
         &mut self,
-        _ctx: &mut Context,
-        _quad_ctx: &mut miniquad::GraphicsContext,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::GraphicsContext,
         _button: ggez::event::MouseButton,
         x: f32,
         y: f32,
@@ -315,7 +333,7 @@ impl Scene for PlayingScene {
             for col in 0..max_col {
                 let rect = self.wall_bounding_boxes[row][col];
                 if rect.contains(Point2::new(x, y)) {
-                    self.click_wall(row, col);
+                    self.click_wall(ctx, quad_ctx, row, col);
                     return None;
                 }
             }

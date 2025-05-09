@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use ggez::graphics::{DrawParam, Point2};
+
 use crate::game::Player;
 use crate::scene::prelude::*;
 
@@ -9,16 +11,47 @@ pub struct PreparePlayerScene {
     board: Board,
     game_mode: GameMode,
     start_time: Option<Duration>,
+    image_player1: graphics::Image,
+    image_player2: graphics::Image,
+    image_cpu: graphics::Image,
 }
 
 impl PreparePlayerScene {
-    pub fn new(player: Player, board: &Board, game_mode: &GameMode) -> Self {
+    pub fn new(
+        ctx: &mut ggez::Context,
+        quad_ctx: &mut ggez::event::GraphicsContext,
+        player: Player,
+        board: &Board,
+        game_mode: &GameMode,
+    ) -> Self {
+        let image_player1 = graphics::Image::new(ctx, quad_ctx, "ui/player_1_turn.png")
+            .expect("image is available");
+        let image_player2 = graphics::Image::new(ctx, quad_ctx, "ui/player_2_turn.png")
+            .expect("image is available");
+        let image_cpu =
+            graphics::Image::new(ctx, quad_ctx, "ui/cpu_turn.png").expect("image is available");
+
         Self {
             player,
             board: board.clone(),
             game_mode: game_mode.clone(),
             start_time: None,
+            image_player1,
+            image_player2,
+            image_cpu,
         }
+    }
+
+    fn get_tile_size(&self, quad_ctx: &mut miniquad::Context) -> (f32, f32) {
+        let (w, h) = quad_ctx.display().screen_size();
+
+        let tile_size_x = w / SCENE_WIDTH;
+        let tile_size_y = h / SCENE_HEIGHT;
+
+        if tile_size_x > tile_size_y {
+            return (tile_size_y, tile_size_y);
+        }
+        (tile_size_x, tile_size_x)
     }
 }
 
@@ -53,15 +86,36 @@ impl Scene for PreparePlayerScene {
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
         graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
 
-        let (width, height) = graphics::drawable_size(quad_ctx);
+        let tile_size = self.get_tile_size(quad_ctx);
 
-        draw_text(
-            ctx,
-            quad_ctx,
-            width / 2.0,
-            height / 2.0,
-            &format!("{:?}'s turn", self.player),
-        )?;
+        let dst = Point2::new(0., 0.);
+
+        match self.player {
+            Player::Player1 => graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.image_player1,
+                DrawParam::new()
+                    .dest(dst)
+                    .scale(Vector2::new(tile_size.0, tile_size.1)),
+            )?,
+            Player::Player2 => graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.image_player2,
+                DrawParam::new()
+                    .dest(dst)
+                    .scale(Vector2::new(tile_size.0, tile_size.1)),
+            )?,
+            Player::CPU => graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.image_cpu,
+                DrawParam::new()
+                    .dest(dst)
+                    .scale(Vector2::new(tile_size.0, tile_size.1)),
+            )?,
+        }
 
         graphics::present(ctx, quad_ctx)?;
         Ok(())

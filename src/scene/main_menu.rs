@@ -104,8 +104,14 @@ impl Scene for MainMenuScene {
             height / 2.0 - 60.0,
             &self.width.to_string(),
         )?;
-        self.width_incr_button_bounding_box =
-            draw_button(ctx, quad_ctx, width / 2.0 + 60.0, height / 2.0 - 60.0, "+", false)?;
+        self.width_incr_button_bounding_box = draw_button(
+            ctx,
+            quad_ctx,
+            width / 2.0 + 60.0,
+            height / 2.0 - 60.0,
+            "+",
+            false,
+        )?;
         draw_text(
             ctx,
             quad_ctx,
@@ -145,8 +151,8 @@ impl Scene for MainMenuScene {
 
     fn mouse_button_up_event(
         &mut self,
-        _ctx: &mut ggez::Context,
-        _quad_ctx: &mut ggez::miniquad::GraphicsContext,
+        ctx: &mut ggez::Context,
+        quad_ctx: &mut ggez::miniquad::GraphicsContext,
         _button: ggez::event::MouseButton,
         x: f32,
         y: f32,
@@ -192,6 +198,8 @@ impl Scene for MainMenuScene {
                 GameMode::TwoPlayer
             };
             let game = PreparePlayerScene::new(
+                ctx,
+                quad_ctx,
                 game::Player::Player1,
                 &Board::new(self.width, self.height),
                 &game_mode,

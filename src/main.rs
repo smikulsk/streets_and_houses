@@ -85,8 +85,8 @@ pub fn main() -> GameResult {
     ggez::start(
         ggez::conf::Conf::default()
             .cache(Some(include_bytes!("resources.tar")))
-            .window_width(600)
-            .window_height(600)
+            .window_width(800)
+            .window_height(800)
             .window_title("Streets'n'Houses".to_string())
             .window_resizable(true),
         |_context, _quad_ctx| Box::new(GameManager::new()),
