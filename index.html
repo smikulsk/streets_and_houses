@@ -42,6 +42,10 @@
                 canvas.width = screenWidth;
                 canvas.height = screenWidth / aspectRatio;
             }
+            
+            if (typeof wasm_exports !== 'undefined' && wasm_exports.resize) {
+                wasm_exports.resize(canvas.width, canvas.height);
+            }
         }
 
         window.addEventListener('resize', resizeCanvas);
