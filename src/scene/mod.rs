@@ -24,6 +24,7 @@ pub mod main_menu;
 pub mod playing;
 pub mod prelude;
 pub mod prepare_player;
+pub mod title_screen;
 
 pub trait Scene: Debug {
     type State: GameStateMarker;

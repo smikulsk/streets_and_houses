@@ -3,7 +3,20 @@ pub use super::game_over::*;
 pub use super::main_menu::*;
 pub use super::playing::*;
 pub use super::prepare_player::*;
+pub use super::title_screen::*;
 pub use super::*;
+
+pub fn get_scene_translation(
+    quad_ctx: &mut miniquad::Context,
+    tile_size: (f32, f32),
+) -> (f32, f32) {
+    let (w, h) = quad_ctx.display().screen_size();
+
+    (
+        (w - SCENE_WIDTH * tile_size.0) / 2.0,
+        (h - SCENE_HEIGHT * tile_size.1) / 2.0,
+    )
+}
 
 pub fn draw_text(
     ctx: &mut Context,

@@ -105,6 +105,25 @@ impl Game<PlayingState> {
     }
 }
 
+impl Game<TitleScreenState> {
+    pub fn new(ctx: &mut ggez::Context, quad_ctx: &mut ggez::event::GraphicsContext) -> Self {
+        Self {
+            current_scene: Box::new(TitleScreenScene::new(ctx, quad_ctx)),
+        }
+    }
+    pub fn transition(self, transition: Transition) -> Box<dyn GameInstance> {
+        match transition {
+            Transition::ToMainMenu(scene) => Box::new(Game {
+                current_scene: scene,
+            }),
+            // Transition::ToSettings(scene) => Box::new(Game {
+            //     current_scene: scene,
+            // }),
+            _ => Box::new(self),
+        }
+    }
+}
+
 // Common trait for all game instances
 pub trait GameInstance: Debug {
     fn update(
@@ -161,6 +180,9 @@ impl<S: GameStateMarker + 'static> GameInstance for Game<S> {
                 current_scene: scene,
             }),
             Transition::ToGameOver(scene) => Box::new(Game {
+                current_scene: scene,
+            }),
+            Transition::ToTitleScreen(scene) => Box::new(Game {
                 current_scene: scene,
             }),
         }

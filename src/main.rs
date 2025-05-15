@@ -19,20 +19,14 @@ pub struct GameManager {
 }
 
 impl GameManager {
-    pub fn new() -> Self {
+    pub fn new(ctx: &mut ggez::Context, quad_ctx: &mut ggez::event::GraphicsContext) -> Self {
         Self {
-            current_game: Box::new(Game::<MainMenuState>::default()),
+            current_game: Box::new(Game::<TitleScreenState>::new(ctx, quad_ctx)),
         }
     }
 
     pub fn handle_transition(&mut self, transition: Transition) {
         self.current_game = self.current_game.transition(transition);
-    }
-}
-
-impl Default for GameManager {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -69,12 +63,12 @@ impl event::EventHandler<ggez::GameError> for GameManager {
     }
 
     fn resize_event(
-            &mut self,
-            ctx: &mut Context,
-            _quad_ctx: &mut miniquad::Context,
-            width: f32,
-            height: f32,
-        ) {
+        &mut self,
+        ctx: &mut Context,
+        _quad_ctx: &mut miniquad::Context,
+        width: f32,
+        height: f32,
+    ) {
         ggez::graphics::set_screen_coordinates(ctx, Rect::new(0.0, 0.0, width, height))
             .expect("Failed to set screen coordinates");
     }
@@ -89,7 +83,7 @@ pub fn main() -> GameResult {
             .window_height(800)
             .window_title("Streets'n'Houses".to_string())
             .window_resizable(true),
-        |_context, _quad_ctx| Box::new(GameManager::new()),
+        |context, quad_ctx| Box::new(GameManager::new(context, quad_ctx)),
     )
 }
 

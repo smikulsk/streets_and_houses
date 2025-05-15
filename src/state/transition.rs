@@ -11,4 +11,5 @@ pub enum Transition {
     //ToPaused(Box<dyn Scene<State = PausedState>>),
     ToGameOver(Box<dyn Scene<State = GameOverState>>),
     //ToSettings(Box<dyn Scene<State = SettingsState>>),
+    ToTitleScreen(Box<dyn Scene<State = TitleScreenState>>),
 }

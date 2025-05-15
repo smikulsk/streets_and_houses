@@ -13,6 +13,8 @@ pub struct PausedState;
 pub struct GameOverState;
 #[derive(Debug, Clone)]
 pub struct SettingsState;
+#[derive(Debug, Clone)]
+pub struct TitleScreenState;
 
 impl GameStateMarker for MainMenuState {}
 impl GameStateMarker for PreparePlayerState {}
@@ -20,3 +22,4 @@ impl GameStateMarker for PlayingState {}
 impl GameStateMarker for PausedState {}
 impl GameStateMarker for GameOverState {}
 impl GameStateMarker for SettingsState {}
+impl GameStateMarker for TitleScreenState {}

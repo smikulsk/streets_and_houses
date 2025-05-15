@@ -87,8 +87,9 @@ impl Scene for PreparePlayerScene {
         graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
 
         let tile_size = self.get_tile_size(quad_ctx);
+        let translation = get_scene_translation(quad_ctx, tile_size);
 
-        let dst = Point2::new(0., 0.);
+        let dst = Point2::new(translation.0, translation.1);
 
         match self.player {
             Player::Player1 => graphics::draw(
