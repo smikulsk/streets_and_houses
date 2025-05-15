@@ -197,14 +197,30 @@ impl Scene for MainMenuScene {
             } else {
                 GameMode::TwoPlayer
             };
-            let game = PreparePlayerScene::new(
-                ctx,
-                quad_ctx,
-                game::Player::Player1,
-                &Board::new(self.width, self.height),
-                &game_mode,
-            );
-            Transition::ToPreparePlayer(Box::new(game))
+            match game_mode {
+                GameMode::OnePlayer(_) => {
+                    let game = PlayingScene::new(
+                        ctx,
+                        quad_ctx,
+                        game::Player::Player1,
+                        Board::new(self.width, self.height),
+                        game_mode,
+                    )
+                    .expect("board was initialized");
+
+                    Transition::ToPlaying(Box::new(game))
+                }
+                GameMode::TwoPlayer => {
+                    let prepare_player_scene = PreparePlayerScene::new(
+                        ctx,
+                        quad_ctx,
+                        game::Player::Player1,
+                        &Board::new(self.width, self.height),
+                        &game_mode,
+                    );
+                    Transition::ToPreparePlayer(Box::new(prepare_player_scene))
+                }
+            }
         })
     }
 }

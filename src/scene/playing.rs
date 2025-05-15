@@ -208,15 +208,30 @@ impl PlayingScene {
                     };
 
                     if !self.board.all_is_clicked() {
-                        let prepare_player_scene = PreparePlayerScene::new(
-                            ctx,
-                            quad_ctx,
-                            new_player,
-                            &self.board,
-                            &self.game_mode,
-                        );
-                        self.deferred_transition =
-                            Some(Transition::ToPreparePlayer(Box::new(prepare_player_scene)));
+                        self.deferred_transition = match self.game_mode {
+                            GameMode::OnePlayer(_) => {
+                                let game = PlayingScene::new(
+                                    ctx,
+                                    quad_ctx,
+                                    new_player,
+                                    self.board.clone(),
+                                    self.game_mode.clone(),
+                                )
+                                .expect("board was initialized");
+
+                                Some(Transition::ToPlaying(Box::new(game)))
+                            }
+                            GameMode::TwoPlayer => {
+                                let prepare_player_scene = PreparePlayerScene::new(
+                                    ctx,
+                                    quad_ctx,
+                                    new_player,
+                                    &self.board,
+                                    &self.game_mode,
+                                );
+                                Some(Transition::ToPreparePlayer(Box::new(prepare_player_scene)))
+                            }
+                        }
                     }
                 }
                 self.already_drawn = false;
