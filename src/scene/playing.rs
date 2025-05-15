@@ -335,7 +335,7 @@ impl Scene for PlayingScene {
         x: f32,
         y: f32,
     ) -> Option<Transition> {
-        if self.player == Player::CPU {
+        if self.player == Player::CPU || self.deferred_transition.is_some() {
             return None;
         }
 
