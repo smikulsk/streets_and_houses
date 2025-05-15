@@ -30,6 +30,20 @@ impl TitleScreenScene {
         }
         (tile_size_x, tile_size_x)
     }
+    
+    #[cfg(feature = "draw_bounding_rects")]
+    fn draw_bounding_rect(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::Context) -> Result<(), ggez::GameError> {
+        let dest_point = graphics::DrawParam::new().dest(Point2::new(0.0, 0.0));
+        let rect = graphics::Mesh::new_rectangle(
+            ctx,
+            quad_ctx,
+            graphics::DrawMode::stroke(1.0),
+            self.start_button_bounding_box,
+            graphics::Color::WHITE,
+        )?;
+        graphics::draw(ctx, quad_ctx, &rect, dest_point)?;
+        Ok(())
+    }
 }
 
 impl Scene for TitleScreenScene {
@@ -68,17 +82,8 @@ impl Scene for TitleScreenScene {
             START_BUTTON_HEIGHT * tile_size.1,
         );
 
-        let dest_point = graphics::DrawParam::new().dest(Point2::new(0.0, 0.0));
-
-        let rect = graphics::Mesh::new_rectangle(
-            ctx,
-            quad_ctx,
-            graphics::DrawMode::stroke(1.0),
-            self.start_button_bounding_box,
-            graphics::Color::WHITE,
-        )?;
-
-        graphics::draw(ctx, quad_ctx, &rect, dest_point)?;
+        #[cfg(feature = "draw_bounding_rects")]
+        self.draw_bounding_rect(ctx, quad_ctx)?;
 
         graphics::present(ctx, quad_ctx)?;
         Ok(())
