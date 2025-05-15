@@ -6,16 +6,63 @@ pub use super::prepare_player::*;
 pub use super::title_screen::*;
 pub use super::*;
 
+pub fn get_scene_scale(quad_ctx: &mut miniquad::Context) -> (f32, f32) {
+    let (w, h) = quad_ctx.display().screen_size();
+
+    let scene_scale_x = w / SCENE_WIDTH;
+    let scene_scale_y = h / SCENE_HEIGHT;
+
+    if scene_scale_x > scene_scale_y {
+        return (scene_scale_y, scene_scale_y);
+    }
+    (scene_scale_x, scene_scale_x)
+}
+
 pub fn get_scene_translation(
     quad_ctx: &mut miniquad::Context,
-    tile_size: (f32, f32),
+    scene_scale: (f32, f32),
 ) -> (f32, f32) {
     let (w, h) = quad_ctx.display().screen_size();
 
     (
-        (w - SCENE_WIDTH * tile_size.0) / 2.0,
-        (h - SCENE_HEIGHT * tile_size.1) / 2.0,
+        (w - SCENE_WIDTH * scene_scale.0) / 2.0,
+        (h - SCENE_HEIGHT * scene_scale.1) / 2.0,
     )
+}
+
+pub fn draw_bounding_rect(
+    ctx: &mut Context,
+    quad_ctx: &mut miniquad::Context,
+    bounding_rect: Rect,
+) -> Result<(), ggez::GameError> {
+    let dest_point = graphics::DrawParam::new().dest(Point2::new(0.0, 0.0));
+    let rect = graphics::Mesh::new_rectangle(
+        ctx,
+        quad_ctx,
+        graphics::DrawMode::stroke(1.0),
+        bounding_rect,
+        graphics::Color::WHITE,
+    )?;
+    graphics::draw(ctx, quad_ctx, &rect, dest_point)?;
+    Ok(())
+}
+
+pub fn draw_selection_rect(
+    ctx: &mut Context,
+    quad_ctx: &mut miniquad::Context,
+    bounding_rect: Rect,
+) -> GameResult {
+    let dest_point = graphics::DrawParam::new().dest(Point2::new(bounding_rect.x, bounding_rect.y));
+    let rect = graphics::Mesh::new_rectangle(
+        ctx,
+        quad_ctx,
+        graphics::DrawMode::stroke(1.0),
+        graphics::Rect::new(-15.0, -15.0, bounding_rect.w + 30.0, bounding_rect.h + 30.0),
+        graphics::Color::WHITE,
+    )?;
+
+    graphics::draw(ctx, quad_ctx, &rect, dest_point)?;
+    Ok(())
 }
 
 pub fn draw_text(

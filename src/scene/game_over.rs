@@ -99,16 +99,22 @@ impl Scene for GameOverScene {
 
     fn mouse_button_up_event(
         &mut self,
-        _ctx: &mut ggez::Context,
-        _quad_ctx: &mut ggez::miniquad::GraphicsContext,
+        ctx: &mut ggez::Context,
+        quad_ctx: &mut ggez::miniquad::GraphicsContext,
         _button: ggez::event::MouseButton,
         x: f32,
         y: f32,
     ) -> Option<Transition> {
         let point = Point2::new(x, y);
         self.retry_button_bounding_box.contains(point).then(|| {
-            let game = MainMenuScene::from(self.width, self.height, self.is_one_player_game);
-            Transition::ToMainMenu(Box::new(game))
+            let game = MainMenuScene::from(
+                ctx,
+                quad_ctx,
+                self.width,
+                self.height,
+                self.is_one_player_game,
+            );
+            Transition::ToMainMenu(Box::new(game.expect("scene has been created")))
         })
     }
 }

@@ -13,37 +13,11 @@ impl TitleScreenScene {
         let image =
             graphics::Image::new(ctx, quad_ctx, "ui/title_screen.png").expect("image is available");
 
-        Self {            
+        Self {
             image,
             start_button_bounding_box: Rect::default(),
         }
-    }
-
-    fn get_tile_size(&self, quad_ctx: &mut miniquad::Context) -> (f32, f32) {
-        let (w, h) = quad_ctx.display().screen_size();
-
-        let tile_size_x = w / SCENE_WIDTH;
-        let tile_size_y = h / SCENE_HEIGHT;
-
-        if tile_size_x > tile_size_y {
-            return (tile_size_y, tile_size_y);
-        }
-        (tile_size_x, tile_size_x)
-    }
-    
-    #[cfg(feature = "draw_bounding_rects")]
-    fn draw_bounding_rect(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::Context) -> Result<(), ggez::GameError> {
-        let dest_point = graphics::DrawParam::new().dest(Point2::new(0.0, 0.0));
-        let rect = graphics::Mesh::new_rectangle(
-            ctx,
-            quad_ctx,
-            graphics::DrawMode::stroke(1.0),
-            self.start_button_bounding_box,
-            graphics::Color::WHITE,
-        )?;
-        graphics::draw(ctx, quad_ctx, &rect, dest_point)?;
-        Ok(())
-    }
+    }    
 }
 
 impl Scene for TitleScreenScene {
@@ -60,9 +34,9 @@ impl Scene for TitleScreenScene {
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
         graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
 
-        let tile_size = self.get_tile_size(quad_ctx);
+        let scene_scale = get_scene_scale(quad_ctx);
 
-        let translation = get_scene_translation(quad_ctx, tile_size);
+        let translation = get_scene_translation(quad_ctx, scene_scale);
 
         let dst = Point2::new(translation.0, translation.1);
 
@@ -72,18 +46,18 @@ impl Scene for TitleScreenScene {
             &self.image,
             DrawParam::new()
                 .dest(dst)
-                .scale(Vector2::new(tile_size.0, tile_size.1)),
+                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
         )?;
 
         self.start_button_bounding_box = graphics::Rect::new(
-            translation.0 + START_BUTTON_X * tile_size.0,
-            translation.1 + START_BUTTON_Y * tile_size.1,
-            START_BUTTON_WIDTH * tile_size.0,
-            START_BUTTON_HEIGHT * tile_size.1,
+            translation.0 + TITLE_SCREEN_START_BUTTON_X * scene_scale.0,
+            translation.1 + TITLE_SCREEN_START_BUTTON_Y * scene_scale.1,
+            TITLE_SCREEN_START_BUTTON_WIDTH * scene_scale.0,
+            TITLE_SCREEN_START_BUTTON_HEIGHT * scene_scale.1,
         );
 
         #[cfg(feature = "draw_bounding_rects")]
-        self.draw_bounding_rect(ctx, quad_ctx)?;
+        draw_bounding_rect(ctx, quad_ctx, self.start_button_bounding_box)?;
 
         graphics::present(ctx, quad_ctx)?;
         Ok(())
@@ -91,8 +65,8 @@ impl Scene for TitleScreenScene {
 
     fn mouse_button_up_event(
         &mut self,
-        _ctx: &mut ggez::Context,
-        _quad_ctx: &mut ggez::miniquad::GraphicsContext,
+        ctx: &mut ggez::Context,
+        quad_ctx: &mut ggez::miniquad::GraphicsContext,
         _button: ggez::event::MouseButton,
         x: f32,
         y: f32,
@@ -100,7 +74,7 @@ impl Scene for TitleScreenScene {
         let point = Point2::new(x, y);
 
         self.start_button_bounding_box.contains(point).then(|| {
-            let game = MainMenuScene::new();
+            let game = MainMenuScene::new(ctx, quad_ctx).expect("scene was created");
 
             Transition::ToMainMenu(Box::new(game))
         })

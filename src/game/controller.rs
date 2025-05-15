@@ -46,9 +46,9 @@ impl<S: GameStateMarker> Game<S> {
 
 // Specific implementations for each state
 impl Game<MainMenuState> {
-    pub fn new() -> Self {
+    pub fn new(ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> Self {
         Self {
-            current_scene: Box::new(MainMenuScene::new()),
+            current_scene: Box::new(MainMenuScene::new(ctx, quad_ctx).expect("scene has been created")),
         }
     }
 
@@ -65,12 +65,6 @@ impl Game<MainMenuState> {
             // }),
             _ => Box::new(self),
         }
-    }
-}
-
-impl Default for Game<MainMenuState> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
