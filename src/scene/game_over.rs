@@ -12,8 +12,8 @@ pub struct GameOverScene {
     image_player_1_points: graphics::Image,
     image_player_2_points: graphics::Image,
     image_cpu_points: graphics::Image,
-    image_points_1: graphics::Image,
-    image_points_2: graphics::Image,
+    image_points_1: Vec<graphics::Image>,
+    image_points_2: Vec<graphics::Image>,
     image_player_1_wins: graphics::Image,
     image_player_2_wins: graphics::Image,
     image_cpu_wins: graphics::Image,
@@ -39,8 +39,8 @@ impl GameOverScene {
         let image_player_1_points = graphics::Image::new(ctx, quad_ctx, "ui/player_1_points.png")?;
         let image_player_2_points = graphics::Image::new(ctx, quad_ctx, "ui/player_2_points.png")?;
         let image_cpu_points = graphics::Image::new(ctx, quad_ctx, "ui/CPU_points.png")?;
-        let image_points_1 = graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", points_1))?;
-        let image_points_2 = graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", points_2))?;
+        let image_points_1 = convert_points_to_list_of_images(ctx, quad_ctx, points_1)?;
+        let image_points_2 = convert_points_to_list_of_images(ctx, quad_ctx, points_2)?;
         let image_player_1_wins = graphics::Image::new(ctx, quad_ctx, "ui/player_1_wins.png")?;
         let image_player_2_wins = graphics::Image::new(ctx, quad_ctx, "ui/player_2_wins.png")?;
         let image_cpu_wins = graphics::Image::new(ctx, quad_ctx, "ui/CPU_wins.png")?;
@@ -161,20 +161,23 @@ impl GameOverScene {
                 ))
                 .scale(Vector2::new(scene_scale.0, scene_scale.1)),
         )?;
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.image_points_1,
-            graphics::DrawParam::new()
-                .dest(Point2::new(
-                    GAME_OVER_POINTS_1_X * scene_scale.0 + translation.0,
-                    GAME_OVER_POINTS_1_Y * scene_scale.1 + translation.1,
-                ))
-                .scale(Vector2::new(
-                    MAIN_MENU_DIGIT_WIDTH / self.image_points_1.width() as f32 * scene_scale.0,
-                    MAIN_MENU_DIGIT_HEIGHT / self.image_points_1.height() as f32 * scene_scale.1,
-                )),
-        )?;
+        for (idx, image) in self.image_points_1.iter().enumerate() {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                image,
+                graphics::DrawParam::new()
+                    .dest(Point2::new(
+                        (GAME_OVER_POINTS_1_X + 2.0 *idx as f32 * MAIN_MENU_DIGIT_WIDTH / 3.0) * scene_scale.0
+                            + translation.0,
+                        GAME_OVER_POINTS_1_Y * scene_scale.1 + translation.1,
+                    ))
+                    .scale(Vector2::new(
+                        MAIN_MENU_DIGIT_WIDTH / image.width() as f32 * scene_scale.0,
+                        MAIN_MENU_DIGIT_HEIGHT / image.height() as f32 * scene_scale.1,
+                    )),
+            )?;
+        }
         Ok(())
     }
 
@@ -210,20 +213,24 @@ impl GameOverScene {
                     .scale(Vector2::new(scene_scale.0, scene_scale.1)),
             )?;
         }
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.image_points_2,
-            graphics::DrawParam::new()
-                .dest(Point2::new(
-                    GAME_OVER_POINTS_2_X * scene_scale.0 + translation.0,
-                    GAME_OVER_POINTS_2_Y * scene_scale.1 + translation.1,
-                ))
-                .scale(Vector2::new(
-                    MAIN_MENU_DIGIT_WIDTH / self.image_points_2.width() as f32 * scene_scale.0,
-                    MAIN_MENU_DIGIT_HEIGHT / self.image_points_2.height() as f32 * scene_scale.1,
-                )),
-        )?;
+
+        for (idx, image) in self.image_points_2.iter().enumerate() {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                image,
+                graphics::DrawParam::new()
+                    .dest(Point2::new(
+                        (GAME_OVER_POINTS_2_X + 2.0 * idx as f32 * MAIN_MENU_DIGIT_WIDTH / 3.0) * scene_scale.0
+                            + translation.0,
+                        GAME_OVER_POINTS_2_Y * scene_scale.1 + translation.1,
+                    ))
+                    .scale(Vector2::new(
+                        MAIN_MENU_DIGIT_WIDTH / image.width() as f32 * scene_scale.0,
+                        MAIN_MENU_DIGIT_HEIGHT / image.height() as f32 * scene_scale.1,
+                    )),
+            )?;
+        }
         Ok(())
     }
 
@@ -307,4 +314,17 @@ impl Scene for GameOverScene {
             Transition::ToMainMenu(Box::new(game.expect("scene has been created")))
         })
     }
+}
+
+fn convert_points_to_list_of_images(
+    ctx: &mut Context,
+    quad_ctx: &mut miniquad::Context,
+    points: usize,
+) -> GameResult<Vec<graphics::Image>> {
+    points
+        .to_string()
+        .chars()
+        .map(|d| d.to_digit(10).unwrap())
+        .map(|d| graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", d)))
+        .collect::<GameResult<Vec<_>>>()
 }
