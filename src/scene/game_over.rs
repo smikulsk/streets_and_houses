@@ -65,25 +65,14 @@ impl GameOverScene {
             image_restart_game: image_start_game,
         })
     }
-}
 
-impl Scene for GameOverScene {
-    type State = GameOverState;
-
-    fn update(
+    fn draw_background(
         &mut self,
-        _ctx: &mut ggez::Context,
-        _quad_ctx: &mut ggez::event::GraphicsContext,
-    ) -> Result<Option<Transition>, ggez::GameError> {
-        Ok(None)
-    }
-
-    fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
-        graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
-
-        let scene_scale = get_scene_scale(quad_ctx);
-        let translation = get_scene_translation(quad_ctx, scene_scale);
-
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+        scene_scale: (f32, f32),
+        translation: (f32, f32),
+    ) -> Result<(), ggez::GameError> {
         graphics::draw(
             ctx,
             quad_ctx,
@@ -92,75 +81,16 @@ impl Scene for GameOverScene {
                 .dest(Point2::new(translation.0, translation.1))
                 .scale(Vector2::new(scene_scale.0, scene_scale.1)),
         )?;
+        Ok(())
+    }
 
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.image_player_1_points,
-            graphics::DrawParam::new()
-                .dest(Point2::new(
-                    GAME_OVER_PLAYER_1_POINTS_X * scene_scale.0 + translation.0,
-                    GAME_OVER_PLAYER_1_POINTS_Y * scene_scale.1 + translation.1,
-                ))
-                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
-        )?;
-
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.image_points_1,
-            graphics::DrawParam::new()
-                .dest(Point2::new(
-                    GAME_OVER_POINTS_1_X * scene_scale.0 + translation.0,
-                    GAME_OVER_POINTS_1_Y * scene_scale.1 + translation.1,
-                ))
-                .scale(Vector2::new(
-                    MAIN_MENU_DIGIT_WIDTH / self.image_points_1.width() as f32 * scene_scale.0,
-                    MAIN_MENU_DIGIT_HEIGHT / self.image_points_1.height() as f32 * scene_scale.1,
-                )),
-        )?;
-
-        if self.is_one_player_game {
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &self.image_cpu_points,
-                graphics::DrawParam::new()
-                    .dest(Point2::new(
-                        GAME_OVER_CPU_POINTS_X * scene_scale.0 + translation.0,
-                        GAME_OVER_CPU_POINTS_Y * scene_scale.1 + translation.1,
-                    ))
-                    .scale(Vector2::new(scene_scale.0, scene_scale.1)),
-            )?;
-        } else {
-            graphics::draw(
-                ctx,
-                quad_ctx,
-                &self.image_player_2_points,
-                graphics::DrawParam::new()
-                    .dest(Point2::new(
-                        GAME_OVER_PLAYER_2_POINTS_X * scene_scale.0 + translation.0,
-                        GAME_OVER_PLAYER_2_POINTS_Y * scene_scale.1 + translation.1,
-                    ))
-                    .scale(Vector2::new(scene_scale.0, scene_scale.1)),
-            )?;
-        }
-
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            &self.image_points_2,
-            graphics::DrawParam::new()
-                .dest(Point2::new(
-                    GAME_OVER_POINTS_2_X * scene_scale.0 + translation.0,
-                    GAME_OVER_POINTS_2_Y * scene_scale.1 + translation.1,
-                ))
-                .scale(Vector2::new(
-                    MAIN_MENU_DIGIT_WIDTH / self.image_points_2.width() as f32 * scene_scale.0,
-                    MAIN_MENU_DIGIT_HEIGHT / self.image_points_2.height() as f32 * scene_scale.1,
-                )),
-        )?;
-
+    fn draw_game_result(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+        scene_scale: (f32, f32),
+        translation: (f32, f32),
+    ) -> Result<(), ggez::GameError> {
         if let Some(player) = self.statistics.winner {
             match player {
                 game::Player::Player1 => graphics::draw(
@@ -210,7 +140,100 @@ impl Scene for GameOverScene {
                     .scale(Vector2::new(scene_scale.0, scene_scale.1)),
             )?
         }
+        Ok(())
+    }
 
+    fn draw_first_player_points(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+        scene_scale: (f32, f32),
+        translation: (f32, f32),
+    ) -> Result<(), ggez::GameError> {
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.image_player_1_points,
+            graphics::DrawParam::new()
+                .dest(Point2::new(
+                    GAME_OVER_PLAYER_1_POINTS_X * scene_scale.0 + translation.0,
+                    GAME_OVER_PLAYER_1_POINTS_Y * scene_scale.1 + translation.1,
+                ))
+                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
+        )?;
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.image_points_1,
+            graphics::DrawParam::new()
+                .dest(Point2::new(
+                    GAME_OVER_POINTS_1_X * scene_scale.0 + translation.0,
+                    GAME_OVER_POINTS_1_Y * scene_scale.1 + translation.1,
+                ))
+                .scale(Vector2::new(
+                    MAIN_MENU_DIGIT_WIDTH / self.image_points_1.width() as f32 * scene_scale.0,
+                    MAIN_MENU_DIGIT_HEIGHT / self.image_points_1.height() as f32 * scene_scale.1,
+                )),
+        )?;
+        Ok(())
+    }
+
+    fn draw_second_player_points(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+        scene_scale: (f32, f32),
+        translation: (f32, f32),
+    ) -> Result<(), ggez::GameError> {
+        if self.is_one_player_game {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.image_cpu_points,
+                graphics::DrawParam::new()
+                    .dest(Point2::new(
+                        GAME_OVER_CPU_POINTS_X * scene_scale.0 + translation.0,
+                        GAME_OVER_CPU_POINTS_Y * scene_scale.1 + translation.1,
+                    ))
+                    .scale(Vector2::new(scene_scale.0, scene_scale.1)),
+            )?;
+        } else {
+            graphics::draw(
+                ctx,
+                quad_ctx,
+                &self.image_player_2_points,
+                graphics::DrawParam::new()
+                    .dest(Point2::new(
+                        GAME_OVER_PLAYER_2_POINTS_X * scene_scale.0 + translation.0,
+                        GAME_OVER_PLAYER_2_POINTS_Y * scene_scale.1 + translation.1,
+                    ))
+                    .scale(Vector2::new(scene_scale.0, scene_scale.1)),
+            )?;
+        }
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.image_points_2,
+            graphics::DrawParam::new()
+                .dest(Point2::new(
+                    GAME_OVER_POINTS_2_X * scene_scale.0 + translation.0,
+                    GAME_OVER_POINTS_2_Y * scene_scale.1 + translation.1,
+                ))
+                .scale(Vector2::new(
+                    MAIN_MENU_DIGIT_WIDTH / self.image_points_2.width() as f32 * scene_scale.0,
+                    MAIN_MENU_DIGIT_HEIGHT / self.image_points_2.height() as f32 * scene_scale.1,
+                )),
+        )?;
+        Ok(())
+    }
+
+    fn draw_retry_button(
+        &mut self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+        scene_scale: (f32, f32),
+        translation: (f32, f32),
+    ) -> Result<(), ggez::GameError> {
         graphics::draw(
             ctx,
             quad_ctx,
@@ -221,59 +244,44 @@ impl Scene for GameOverScene {
                     GAME_OVER_START_BUTTON_Y * scene_scale.1 + translation.1,
                 ))
                 .scale(Vector2::new(
-                    GAME_OVER_START_BUTTON_WIDTH / self.image_restart_game.width() as f32 * scene_scale.0,
-                    GAME_OVER_START_BUTTON_HEIGHT / self.image_restart_game.height() as f32 * scene_scale.1,
+                    GAME_OVER_START_BUTTON_WIDTH / self.image_restart_game.width() as f32
+                        * scene_scale.0,
+                    GAME_OVER_START_BUTTON_HEIGHT / self.image_restart_game.height() as f32
+                        * scene_scale.1,
                 )),
         )?;
-
         self.retry_button_bounding_box = graphics::Rect::new(
             translation.0 + GAME_OVER_START_BUTTON_X * scene_scale.0,
             translation.1 + GAME_OVER_START_BUTTON_Y * scene_scale.1,
             GAME_OVER_START_BUTTON_WIDTH * scene_scale.0,
             GAME_OVER_START_BUTTON_HEIGHT * scene_scale.1,
         );
+        Ok(())
+    }
+}
 
-        // let (width, height) = graphics::drawable_size(quad_ctx);
+impl Scene for GameOverScene {
+    type State = GameOverState;
 
-        // draw_text(
-        //     ctx,
-        //     quad_ctx,
-        //     width / 2.0 - 50.0,
-        //     height / 2.0 - 100.0,
-        //     &format!("Player1 points: {}", self.statistics.player1_points),
-        // )?;
-        // if self.is_one_player_game {
-        //     draw_text(
-        //         ctx,
-        //         quad_ctx,
-        //         width / 2.0 - 50.0,
-        //         height / 2.0 - 60.0,
-        //         &format!("CPU points: {}", self.statistics.cpu_points),
-        //     )?;
-        // } else {
-        //     draw_text(
-        //         ctx,
-        //         quad_ctx,
-        //         width / 2.0 - 50.0,
-        //         height / 2.0 - 60.0,
-        //         &format!("Player2 points: {}", self.statistics.player2_points),
-        //     )?;
-        // }
-        // draw_text(
-        //     ctx,
-        //     quad_ctx,
-        //     width / 2.0 - 50.0,
-        //     height / 2.0 - 20.0,
-        //     result_str,
-        // )?;
-        // self.retry_button_bounding_box = draw_button(
-        //     ctx,
-        //     quad_ctx,
-        //     width / 2.0,
-        //     height / 2.0 + 40.0,
-        //     "Click to restart the game!",
-        //     false,
-        // )?;
+    fn update(
+        &mut self,
+        _ctx: &mut ggez::Context,
+        _quad_ctx: &mut ggez::event::GraphicsContext,
+    ) -> Result<Option<Transition>, ggez::GameError> {
+        Ok(None)
+    }
+
+    fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
+        graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
+
+        let scene_scale = get_scene_scale(quad_ctx);
+        let translation = get_scene_translation(quad_ctx, scene_scale);
+
+        self.draw_background(ctx, quad_ctx, scene_scale, translation)?;
+        self.draw_game_result(ctx, quad_ctx, scene_scale, translation)?;
+        self.draw_first_player_points(ctx, quad_ctx, scene_scale, translation)?;
+        self.draw_second_player_points(ctx, quad_ctx, scene_scale, translation)?;
+        self.draw_retry_button(ctx, quad_ctx, scene_scale, translation)?;
 
         graphics::present(ctx, quad_ctx)?;
         Ok(())
