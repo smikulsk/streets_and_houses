@@ -1,5 +1,6 @@
 use crate::game::ai::GreadyAlgorithmPlayer;
 use crate::game::Board;
+use crate::game::GameMode;
 use crate::scene::prelude::*;
 
 #[derive(Debug)]
@@ -229,9 +230,9 @@ impl Scene for MainMenuScene {
         );
 
         if self.one_player_game {
-            draw_selection_rect(ctx, quad_ctx, self.one_player_bounding_box)?;
+            draw_selection_rect(ctx, quad_ctx, self.one_player_bounding_box, scene_scale)?;
         } else {
-            draw_selection_rect(ctx, quad_ctx, self.two_players_bounding_box)?;
+            draw_selection_rect(ctx, quad_ctx, self.two_players_bounding_box, scene_scale)?;
         }
 
         self.width_incr_button_bounding_box = self.add_incr_button_sprite(

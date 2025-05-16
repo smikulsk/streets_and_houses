@@ -3,6 +3,7 @@ extern crate good_web_game as ggez;
 use crate::game;
 
 use game::Board;
+use game::GameMode;
 
 use ggez::cgmath::Point2;
 use ggez::cgmath::Vector2;
@@ -15,10 +16,11 @@ use ggez::GameResult;
 
 use std::fmt::Debug;
 
+use crate::rendering::board_renderer::*;
+use crate::rendering::constants::*;
 use crate::state::marker::*;
 use crate::state::transition::*;
 
-pub mod contants;
 pub mod game_over;
 pub mod main_menu;
 pub mod playing;

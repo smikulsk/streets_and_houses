@@ -11,6 +11,7 @@ use game::controller::*;
 use state::prelude::*;
 
 pub mod game;
+pub mod rendering;
 pub mod scene;
 pub mod state;
 

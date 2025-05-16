@@ -3,6 +3,13 @@ use std::cmp::Ordering;
 pub mod ai;
 pub mod controller;
 
+
+#[derive(Debug, Clone)]
+pub enum GameMode {
+    OnePlayer(Box<dyn ai::MoveGenerator>),
+    TwoPlayer,
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Player {
     Player1,

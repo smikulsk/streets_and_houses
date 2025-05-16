@@ -1,4 +1,3 @@
-pub use super::contants::*;
 pub use super::game_over::*;
 pub use super::main_menu::*;
 pub use super::playing::*;
@@ -51,13 +50,19 @@ pub fn draw_selection_rect(
     ctx: &mut Context,
     quad_ctx: &mut miniquad::Context,
     bounding_rect: Rect,
+    scene_scale: (f32, f32),
 ) -> GameResult {
     let dest_point = graphics::DrawParam::new().dest(Point2::new(bounding_rect.x, bounding_rect.y));
     let rect = graphics::Mesh::new_rectangle(
         ctx,
         quad_ctx,
         graphics::DrawMode::stroke(1.0),
-        graphics::Rect::new(-15.0, -15.0, bounding_rect.w + 30.0, bounding_rect.h + 30.0),
+        graphics::Rect::new(
+            -15.0 * scene_scale.0,
+            -15.0 * scene_scale.1,
+            bounding_rect.w + 30.0 * scene_scale.0,
+            bounding_rect.h + 30.0 * scene_scale.1,
+        ),
         graphics::Color::WHITE,
     )?;
 
