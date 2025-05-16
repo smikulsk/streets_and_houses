@@ -1,0 +1,34 @@
+name: Build apk version with notfl3/cargo-apk
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  
+  # The name of the Play Store
+  playstore_name: Streets'n'Houses
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the apk file in the notfl3/cargo-apk container
+      run: |
+        docker run \
+        --rm -v ${{ github.workspace }}:/root/src -w /root/src notfl3/cargo-apk cargo quad-apk build --release
+        
+    # Upload Artifact Build
+    # Noted For Output [main_project_module]/build/outputs/apk/debug/
+    - name: Upload APK - ${{ env.repository_name }}
+      uses: actions/upload-artifact@v4
+      with:
+          name: ${{ env.date_today }} - ${{ env.playstore_name }} - ${{ env.repository_name }} - APK(s) generated
+          path: target/android-artifacts/release/apk
+
