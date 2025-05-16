@@ -5,7 +5,7 @@
 
 ## Game Preview
 
-| ![Title Screen](https://github.com/smikulsk/streets_and_houses/blob/master/docs/title_screen.png | ![Main menu](https://github.com/smikulsk/streets_and_houses/blob/master/docs/settings.png) |
+| ![Title Screen](https://github.com/smikulsk/streets_and_houses/blob/master/docs/title_screen.png) | ![Main menu](https://github.com/smikulsk/streets_and_houses/blob/master/docs/settings.png) |
 |-------------------------|-------------------------|
 | ![Gameplay](https://github.com/smikulsk/streets_and_houses/blob/master/docs/gameplay.png) | ![Results](https://github.com/smikulsk/streets_and_houses/blob/master/docs/results.png) |
 
