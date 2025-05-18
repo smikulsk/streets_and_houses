@@ -10,6 +10,7 @@ pub struct BoardRenderer {
     spritebatch_street_v: graphics::spritebatch::SpriteBatch,
     spritebatch_a: graphics::spritebatch::SpriteBatch,
     spritebatch_b: graphics::spritebatch::SpriteBatch,
+    spritebatch_joints: Vec<graphics::spritebatch::SpriteBatch>,
     board: Board,
     player: Player,
     wall_bounding_boxes: Vec<Vec<Rect>>,
@@ -38,6 +39,7 @@ impl BoardRenderer {
         let batch_street_v = graphics::spritebatch::SpriteBatch::new(image_street_v);
         let batch_a = graphics::spritebatch::SpriteBatch::new(image_a);
         let batch_b = graphics::spritebatch::SpriteBatch::new(image_b);
+        let bacth_joints = generate_joint_spritesheets(ctx, quad_ctx)?;
         let wall_bounding_boxes =
             vec![vec![Rect::default(); board.width + 1]; 2 * board.height + 1];
 
@@ -49,6 +51,7 @@ impl BoardRenderer {
             spritebatch_street_v: batch_street_v,
             spritebatch_a: batch_a,
             spritebatch_b: batch_b,
+            spritebatch_joints: bacth_joints,
             board,
             player,
             wall_bounding_boxes,
@@ -152,6 +155,21 @@ impl BoardRenderer {
         }
     }
 
+    fn add_joint_sprite(
+        &mut self,
+        tile_size: (f32, f32),
+        row: usize,
+        col: usize,
+        dest: Point2<f32>,
+    ) {
+        let p = graphics::DrawParam::new().dest(dest).scale(Vector2::new(
+            tile_size.0 / IMAGE_WIDTH,
+            tile_size.1 / IMAGE_HEIGHT,
+        ));
+        let joint_idx = self.board.joints[row / 2][col].get_joint_mask();
+        self.spritebatch_joints[joint_idx].add(p);
+    }
+
     fn draw_footer(
         &mut self,
         ctx: &mut Context,
@@ -184,7 +202,7 @@ impl BoardRenderer {
         self.wall_bounding_boxes.clone()
     }
 
-    pub fn set_board(&mut self, board : &Board) {
+    pub fn set_board(&mut self, board: &Board) {
         self.board = board.clone();
     }
 }
@@ -211,11 +229,19 @@ impl Renderer for BoardRenderer {
                 }
             } else {
                 for col in 0..self.board.width + 1 {
-                    let dest =
+                    let mut dest =
                         get_vertical_wall_sprite_destination(tile_size, translation, row, col);
                     self.add_wall_sprite(tile_size, row, col, dest);
                     self.wall_bounding_boxes[row][col] =
                         get_vertical_wall_sprite_bounding_box(tile_size, translation, row, col);
+
+                    dest.y -= H_STREET_HEIGHT * tile_size.1 / IMAGE_HEIGHT;
+                    self.add_joint_sprite(tile_size, row, col, dest);
+
+                    if row == 2 * self.board.height - 1 {
+                        dest.y += (IMAGE_HEIGHT + H_STREET_HEIGHT) * tile_size.1 / IMAGE_HEIGHT;
+                        self.add_joint_sprite(tile_size, row + 1, col, dest);
+                    }
                 }
             }
         }
@@ -233,10 +259,30 @@ impl Renderer for BoardRenderer {
             spritebatch.clear();
         }
 
+        for spritebatch in &mut self.spritebatch_joints {
+            graphics::draw(ctx, quad_ctx, spritebatch, graphics::DrawParam::new())?;
+            spritebatch.clear();
+        }
+
         graphics::present(ctx, quad_ctx)?;
 
         Ok(())
     }
+}
+
+fn generate_joint_spritesheets(
+    ctx: &mut Context,
+    quad_ctx: &mut miniquad::GraphicsContext,
+) -> GameResult<Vec<graphics::spritebatch::SpriteBatch>> {
+    let images = (0..16)
+        .map(|n| format!("crossroads/{}.png", get_bit_mask(n)))
+        .map(|path| graphics::Image::new(ctx, quad_ctx, path))
+        .collect::<GameResult<Vec<_>>>();
+
+    Ok(images?
+        .iter()
+        .map(|image| graphics::spritebatch::SpriteBatch::new(image.clone()))
+        .collect::<Vec<_>>())
 }
 
 fn get_horizontal_wall_sprite_destination(
@@ -306,4 +352,41 @@ fn get_vertical_wall_sprite_bounding_box(
         tile_size.0 * V_STREET_WIDTH / IMAGE_WIDTH,
         tile_size.1,
     )
+}
+
+fn get_bit_mask(n: usize) -> String {
+    [8, 4, 2, 1]
+        .iter()
+        .map(|pow_of_2| u8::from(n & pow_of_2 > 0).to_string())
+        .fold(String::new(), |acc, x| acc + &x)
+}
+
+#[cfg(test)]
+mod get_bit_mask_tests {
+    use super::*;
+
+    #[test]
+    fn joint_masks_are_generated_correctly() {
+        let expected_masks = [
+            "0000".to_string(),
+            "0001".to_string(),
+            "0010".to_string(),
+            "0011".to_string(),
+            "0100".to_string(),
+            "0101".to_string(),
+            "0110".to_string(),
+            "0111".to_string(),
+            "1000".to_string(),
+            "1001".to_string(),
+            "1010".to_string(),
+            "1011".to_string(),
+            "1100".to_string(),
+            "1101".to_string(),
+            "1110".to_string(),
+            "1111".to_string(),
+        ];
+        for (n, expected_mask) in expected_masks.iter().enumerate() {
+            assert_eq!(expected_mask, &get_bit_mask(n));
+        }
+    }
 }

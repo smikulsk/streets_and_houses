@@ -3,7 +3,6 @@ use std::cmp::Ordering;
 pub mod ai;
 pub mod controller;
 
-
 #[derive(Debug, Clone)]
 pub enum GameMode {
     OnePlayer(Box<dyn ai::MoveGenerator>),
@@ -47,6 +46,7 @@ pub struct Wall {
     _id: (usize, usize),
     pub is_clicked: bool,
     pub adjacent_cells: Vec<(usize, usize)>,
+    pub adjacent_joints: Vec<(Direction, usize, usize)>,
 }
 
 impl Wall {
@@ -55,12 +55,68 @@ impl Wall {
             _id: (row, col),
             is_clicked: false,
             adjacent_cells: vec![],
+            adjacent_joints: vec![],
         }
     }
 
-    pub fn adjacent_to(&mut self, cell_ids: &[(usize, usize)]) -> &Self {
+    pub fn adjacent_to(&mut self, cell_ids: &[(usize, usize)]) -> &mut Self {
         self.adjacent_cells = cell_ids.to_vec();
         self
+    }
+
+    pub fn with_joint(&mut self, direction: Direction, row: usize, col: usize) -> &mut Self {
+        self.adjacent_joints.push((direction, row, col));
+        self
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
+#[derive(Debug, Clone)]
+pub struct Joint {
+    _id: (usize, usize),
+    north_wall_clicked: bool,
+    east_wall_clicked: bool,
+    south_wall_clicked: bool,
+    west_wall_clicked: bool,
+}
+
+impl Joint {
+    pub fn new(row: usize, col: usize) -> Self {
+        Self {
+            _id: (row, col),
+            north_wall_clicked: false,
+            east_wall_clicked: false,
+            south_wall_clicked: false,
+            west_wall_clicked: false,
+        }
+    }
+
+    pub fn set_wall_clicked(&mut self, direction: Direction) {
+        match direction {
+            Direction::North => self.north_wall_clicked = true,
+            Direction::East => self.east_wall_clicked = true,
+            Direction::South => self.south_wall_clicked = true,
+            Direction::West => self.west_wall_clicked = true,
+        }
+    }
+
+    pub fn get_joint_mask(&self) -> usize {
+        [
+            self.north_wall_clicked,
+            self.east_wall_clicked,
+            self.south_wall_clicked,
+            self.west_wall_clicked,
+        ]
+        .iter()
+        .map(|&flag| usize::from(flag))
+        .fold(0, |acc, x| 2 * acc + x)
     }
 }
 
@@ -69,6 +125,7 @@ pub struct Board {
     pub width: usize,
     pub height: usize,
     pub cells: Vec<Vec<Cell>>,
+    pub joints: Vec<Vec<Joint>>,
     pub walls: Vec<Vec<Wall>>,
 }
 
@@ -78,6 +135,14 @@ impl Board {
             .map(|row| {
                 (0..width)
                     .map(|col| Cell::new(row, col))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+
+        let joints = (0..height + 1)
+            .map(|row| {
+                (0..width + 1)
+                    .map(|col| Joint::new(row, col))
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
@@ -99,6 +164,8 @@ impl Board {
 
                             Wall::new(row, col)
                                 .adjacent_to(&adjacent_cells.clone())
+                                .with_joint(Direction::East, row / 2, col)
+                                .with_joint(Direction::West, row / 2, col + 1)
                                 .clone()
                         })
                         .collect::<Vec<_>>()
@@ -117,6 +184,8 @@ impl Board {
 
                             Wall::new(row, col)
                                 .adjacent_to(&adjacent_cells.clone())
+                                .with_joint(Direction::South, row / 2, col)
+                                .with_joint(Direction::North, row / 2 + 1, col)
                                 .clone()
                         })
                         .collect::<Vec<_>>()
@@ -128,6 +197,7 @@ impl Board {
             width,
             height,
             cells,
+            joints,
             walls,
         }
     }
@@ -149,6 +219,9 @@ impl Board {
                         additional_move = true;
                     }
                 }
+            }
+            for (direction, row, col) in &wall.adjacent_joints {
+                self.joints[*row][*col].set_wall_clicked(*direction);
             }
         } else {
             return Err("Wall is already clicked!".to_string());
@@ -228,4 +301,81 @@ fn check_coordinates(
         return Some((row as usize, col as usize));
     }
     None
+}
+
+#[cfg(test)]
+mod joint_tests {
+    use super::*;
+
+    #[test]
+    fn when_initialized_no_wall_clicked_is_true() {
+        let joint = Joint::new(0, 0);
+
+        assert!(!joint.north_wall_clicked);
+        assert!(!joint.east_wall_clicked);
+        assert!(!joint.south_wall_clicked);
+        assert!(!joint.west_wall_clicked);
+    }
+
+    #[test]
+    fn setting_north_wall_clicked_works_correctly() {
+        let mut joint = Joint::new(0, 0);
+
+        joint.set_wall_clicked(Direction::North);
+
+        assert!(joint.north_wall_clicked);
+        assert!(!joint.east_wall_clicked);
+        assert!(!joint.south_wall_clicked);
+        assert!(!joint.west_wall_clicked);
+    }
+
+    #[test]
+    fn setting_east_wall_clicked_works_correctly() {
+        let mut joint = Joint::new(0, 0);
+
+        joint.set_wall_clicked(Direction::East);
+
+        assert!(!joint.north_wall_clicked);
+        assert!(joint.east_wall_clicked);
+        assert!(!joint.south_wall_clicked);
+        assert!(!joint.west_wall_clicked);
+    }
+
+    #[test]
+    fn setting_south_wall_clicked_works_correctly() {
+        let mut joint = Joint::new(0, 0);
+
+        joint.set_wall_clicked(Direction::South);
+
+        assert!(!joint.north_wall_clicked);
+        assert!(!joint.east_wall_clicked);
+        assert!(joint.south_wall_clicked);
+        assert!(!joint.west_wall_clicked);
+    }
+
+    #[test]
+    fn setting_west_wall_clicked_works_correctly() {
+        let mut joint = Joint::new(0, 0);
+
+        joint.set_wall_clicked(Direction::West);
+
+        assert!(!joint.north_wall_clicked);
+        assert!(!joint.east_wall_clicked);
+        assert!(!joint.south_wall_clicked);
+        assert!(joint.west_wall_clicked);
+    }
+
+    #[test]
+    fn joint_masks_are_generated_correctly() {
+        for expected_mask in 0..16 {
+            let mut joint = Joint::new(0, 0);
+
+            joint.north_wall_clicked = expected_mask & 8 > 0;
+            joint.east_wall_clicked = expected_mask & 4 > 0;
+            joint.south_wall_clicked = expected_mask & 2 > 0;
+            joint.west_wall_clicked = expected_mask & 1 > 0;
+
+            assert_eq!(expected_mask, joint.get_joint_mask());
+        }
+    }
 }

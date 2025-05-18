@@ -2,7 +2,7 @@
 
 ## About
 
-**Streets'n'Houses** is a new version of the classic game [Dots and Boxes](https://en.wikipedia.org/wiki/Dots_and_boxes). Players take turns turning paths into streets, aiming to complete squares and build a houses.
+**Streets'n'Houses** is a new version of the classic game [Dots and Boxes](https://en.wikipedia.org/wiki/Dots_and_boxes). Players take turns turning paths into streets, aiming to complete squares and build houses.
 The player with more built houses wins.
 
 Online version available at: https://smikulsk.github.io/streets_and_houses/
