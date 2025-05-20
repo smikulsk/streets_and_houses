@@ -1,3 +1,4 @@
+use crate::game::Difficulty;
 use crate::game::GameStatistics;
 use crate::scene::prelude::*;
 
@@ -6,6 +7,7 @@ pub struct GameOverScene {
     statistics: GameStatistics,
     retry_button_bounding_box: Rect,
     is_one_player_game: bool,
+    difficulty: Difficulty,
     width: usize,
     height: usize,
     image_background: graphics::Image,
@@ -27,6 +29,7 @@ impl GameOverScene {
         quad_ctx: &mut miniquad::GraphicsContext,
         statistics: GameStatistics,
         game_mode: &GameMode,
+        difficulty: Difficulty,
         width: usize,
         height: usize,
     ) -> GameResult<Self> {
@@ -46,10 +49,12 @@ impl GameOverScene {
         let image_cpu_wins = graphics::Image::new(ctx, quad_ctx, "ui/CPU_wins.png")?;
         let image_tie = graphics::Image::new(ctx, quad_ctx, "ui/tie.png")?;
         let image_start_game = graphics::Image::new(ctx, quad_ctx, "ui/start_game.png")?;
+
         Ok(Self {
             statistics,
             retry_button_bounding_box: Rect::default(),
             is_one_player_game,
+            difficulty,
             width,
             height,
             image_background,
@@ -168,7 +173,8 @@ impl GameOverScene {
                 image,
                 graphics::DrawParam::new()
                     .dest(Point2::new(
-                        (GAME_OVER_POINTS_1_X + 2.0 *idx as f32 * MAIN_MENU_DIGIT_WIDTH / 3.0) * scene_scale.0
+                        (GAME_OVER_POINTS_1_X + 2.0 * idx as f32 * MAIN_MENU_DIGIT_WIDTH / 3.0)
+                            * scene_scale.0
                             + translation.0,
                         GAME_OVER_POINTS_1_Y * scene_scale.1 + translation.1,
                     ))
@@ -221,7 +227,8 @@ impl GameOverScene {
                 image,
                 graphics::DrawParam::new()
                     .dest(Point2::new(
-                        (GAME_OVER_POINTS_2_X + 2.0 * idx as f32 * MAIN_MENU_DIGIT_WIDTH / 3.0) * scene_scale.0
+                        (GAME_OVER_POINTS_2_X + 2.0 * idx as f32 * MAIN_MENU_DIGIT_WIDTH / 3.0)
+                            * scene_scale.0
                             + translation.0,
                         GAME_OVER_POINTS_2_Y * scene_scale.1 + translation.1,
                     ))
@@ -310,6 +317,7 @@ impl Scene for GameOverScene {
                 self.width,
                 self.height,
                 self.is_one_player_game,
+                self.difficulty,
             );
             Transition::ToMainMenu(Box::new(game.expect("scene has been created")))
         })

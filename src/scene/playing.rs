@@ -13,6 +13,7 @@ pub struct PlayingScene {
     player: game::Player,
     wall_bounding_boxes: Vec<Vec<Rect>>,
     game_mode: game::GameMode,
+    difficulty : game::Difficulty,
     already_drawn: bool,
     deferred_transition: Option<Transition>,
 }
@@ -24,6 +25,7 @@ impl PlayingScene {
         player: Player,
         board: Board,
         game_mode: game::GameMode,
+        difficulty : game::Difficulty,
     ) -> GameResult<PlayingScene> {
         let wall_bounding_boxes =
             vec![vec![Rect::default(); board.width + 1]; 2 * board.height + 1];
@@ -36,6 +38,7 @@ impl PlayingScene {
             player,
             wall_bounding_boxes,
             game_mode,
+            difficulty,
             already_drawn: false,
             deferred_transition: None,
         };
@@ -70,6 +73,7 @@ impl PlayingScene {
                                     new_player,
                                     self.board.clone(),
                                     self.game_mode.clone(),
+                                    self.difficulty,
                                 )
                                 .expect("board was initialized");
 
@@ -82,6 +86,7 @@ impl PlayingScene {
                                     new_player,
                                     &self.board,
                                     &self.game_mode,
+                                    self.difficulty,
                                 );
                                 Some(Transition::ToPreparePlayer(Box::new(prepare_player_scene)))
                             }
@@ -115,6 +120,7 @@ impl Scene for PlayingScene {
                     quad_ctx,
                     game_statistics,
                     &self.game_mode,
+                    self.difficulty,
                     self.board.width,
                     self.board.height,
                 ).expect("scene has been created");

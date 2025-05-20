@@ -10,6 +10,7 @@ use ggez::GameResult;
 use game::controller::*;
 use state::prelude::*;
 
+pub mod ai;
 pub mod game;
 pub mod rendering;
 pub mod scene;

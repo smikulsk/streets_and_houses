@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use ggez::graphics::{DrawParam, Point2};
 
-use crate::game::Player;
+use crate::game::{Difficulty, Player};
 use crate::scene::prelude::*;
 
 #[derive(Debug)]
@@ -10,6 +10,7 @@ pub struct PreparePlayerScene {
     player: Player,
     board: Board,
     game_mode: GameMode,
+    difficulty: Difficulty,
     start_time: Option<Duration>,
     image_player1: graphics::Image,
     image_player2: graphics::Image,
@@ -23,6 +24,7 @@ impl PreparePlayerScene {
         player: Player,
         board: &Board,
         game_mode: &GameMode,
+        difficulty : Difficulty,
     ) -> Self {
         let image_player1 = graphics::Image::new(ctx, quad_ctx, "ui/player_1_turn.png")
             .expect("image is available");
@@ -35,6 +37,7 @@ impl PreparePlayerScene {
             player,
             board: board.clone(),
             game_mode: game_mode.clone(),
+            difficulty,
             start_time: None,
             image_player1,
             image_player2,
@@ -74,6 +77,7 @@ impl Scene for PreparePlayerScene {
                     self.player,
                     self.board.clone(),
                     self.game_mode.clone(),
+                    self.difficulty,
                 )
                 .expect("board was initialized");
 

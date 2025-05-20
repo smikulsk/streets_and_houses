@@ -1,6 +1,5 @@
-use crate::game::ai::GreadyAlgorithmPlayer;
-use crate::game::Board;
-use crate::game::GameMode;
+use crate::ai::prelude::*;
+use crate::game::Difficulty;
 use crate::scene::prelude::*;
 
 #[derive(Debug)]
@@ -9,12 +8,15 @@ pub struct MainMenuScene {
     height: usize,
     one_player_bounding_box: Rect,
     two_players_bounding_box: Rect,
+    easy_difficulty_bounding_box : Rect,
+    medium_difficulty_bounding_box : Rect,
     width_decr_button_bounding_box: Rect,
     width_incr_button_bounding_box: Rect,
     height_decr_button_bounding_box: Rect,
     height_incr_button_bounding_box: Rect,
     start_button_bounding_box: Rect,
     one_player_game: bool,
+    difficulty: game::Difficulty,
     image_background: graphics::Image,
     image_plus: graphics::Image,
     image_minus: graphics::Image,
@@ -22,6 +24,12 @@ pub struct MainMenuScene {
     image_height: graphics::Image,
     image_one_player: graphics::Image,
     image_two_players: graphics::Image,
+    image_disabled_checked_radio: graphics::Image,
+    image_disabled_unchecked_radio: graphics::Image,
+    image_easy: graphics::Image,
+    image_medium: graphics::Image,
+    image_unchecked_radio: graphics::Image,
+    image_checked_radio: graphics::Image,
     spritebatch_plus: graphics::spritebatch::SpriteBatch,
     spritebatch_minus: graphics::spritebatch::SpriteBatch,
     spritebatch_width: graphics::spritebatch::SpriteBatch,
@@ -33,10 +41,20 @@ impl MainMenuScene {
         let image_background = graphics::Image::new(ctx, quad_ctx, "ui/settings.png")?;
         let image_plus = graphics::Image::new(ctx, quad_ctx, "ui/plus.png")?;
         let image_minus = graphics::Image::new(ctx, quad_ctx, "ui/minus.png")?;
-        let image_width = graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", DEFAULT_BOARD_WIDTH))?;
-        let image_height = graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", DEFAULT_BOARD_HEIGHT))?;
+        let image_width =
+            graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", DEFAULT_BOARD_WIDTH))?;
+        let image_height =
+            graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", DEFAULT_BOARD_HEIGHT))?;
         let image_one_player = graphics::Image::new(ctx, quad_ctx, "ui/1_player.png")?;
         let image_two_players = graphics::Image::new(ctx, quad_ctx, "ui/2_players.png")?;
+        let image_disabled_checked_radio =
+            graphics::Image::new(ctx, quad_ctx, "ui/disabled_checked_radio.png")?;
+        let image_disabled_unchecked_radio =
+            graphics::Image::new(ctx, quad_ctx, "ui/disabled_radio.png")?;
+        let image_easy = graphics::Image::new(ctx, quad_ctx, "ui/easy.png")?;
+        let image_medium = graphics::Image::new(ctx, quad_ctx, "ui/medium.png")?;
+        let image_unchecked_radio = graphics::Image::new(ctx, quad_ctx, "ui/unchecked_radio.png")?;
+        let image_checked_radio = graphics::Image::new(ctx, quad_ctx, "ui/checked_radio.png")?;
         let batch_plus = graphics::spritebatch::SpriteBatch::new(image_plus.clone());
         let batch_minus = graphics::spritebatch::SpriteBatch::new(image_minus.clone());
         let batch_width = graphics::spritebatch::SpriteBatch::new(image_width.clone());
@@ -47,12 +65,15 @@ impl MainMenuScene {
             height: DEFAULT_BOARD_HEIGHT,
             one_player_bounding_box: Rect::default(),
             two_players_bounding_box: Rect::default(),
+            easy_difficulty_bounding_box: Rect::default(),
+            medium_difficulty_bounding_box: Rect::default(),
             width_decr_button_bounding_box: Rect::default(),
             width_incr_button_bounding_box: Rect::default(),
             height_decr_button_bounding_box: Rect::default(),
             height_incr_button_bounding_box: Rect::default(),
             start_button_bounding_box: Rect::default(),
             one_player_game: true,
+            difficulty: Difficulty::Medium,
             image_background,
             image_plus,
             image_minus,
@@ -60,6 +81,12 @@ impl MainMenuScene {
             image_height,
             image_one_player,
             image_two_players,
+            image_disabled_checked_radio,
+            image_disabled_unchecked_radio,
+            image_easy,
+            image_medium,
+            image_unchecked_radio,
+            image_checked_radio,
             spritebatch_plus: batch_plus,
             spritebatch_minus: batch_minus,
             spritebatch_width: batch_width,
@@ -74,6 +101,7 @@ impl MainMenuScene {
         width: usize,
         height: usize,
         one_player_game: bool,
+        difficulty: Difficulty,
     ) -> GameResult<Self> {
         let image_background = graphics::Image::new(ctx, quad_ctx, "ui/settings.png")?;
         let image_plus = graphics::Image::new(ctx, quad_ctx, "ui/plus.png")?;
@@ -82,6 +110,14 @@ impl MainMenuScene {
         let image_height = graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", height))?;
         let image_one_player = graphics::Image::new(ctx, quad_ctx, "ui/1_player.png")?;
         let image_two_players = graphics::Image::new(ctx, quad_ctx, "ui/2_players.png")?;
+        let image_disabled_checked_radio =
+            graphics::Image::new(ctx, quad_ctx, "ui/disabled_checked_radio.png")?;
+        let image_disabled_unchecked_radio =
+            graphics::Image::new(ctx, quad_ctx, "ui/disabled_radio.png")?;
+        let image_easy = graphics::Image::new(ctx, quad_ctx, "ui/easy.png")?;
+        let image_medium = graphics::Image::new(ctx, quad_ctx, "ui/medium.png")?;
+        let image_unchecked_radio = graphics::Image::new(ctx, quad_ctx, "ui/unchecked_radio.png")?;
+        let image_checked_radio = graphics::Image::new(ctx, quad_ctx, "ui/checked_radio.png")?;
         let batch_plus = graphics::spritebatch::SpriteBatch::new(image_plus.clone());
         let batch_minus = graphics::spritebatch::SpriteBatch::new(image_minus.clone());
         let batch_width = graphics::spritebatch::SpriteBatch::new(image_width.clone());
@@ -92,12 +128,15 @@ impl MainMenuScene {
             height,
             one_player_bounding_box: Rect::default(),
             two_players_bounding_box: Rect::default(),
+            easy_difficulty_bounding_box: Rect::default(),
+            medium_difficulty_bounding_box: Rect::default(),
             width_decr_button_bounding_box: Rect::default(),
             width_incr_button_bounding_box: Rect::default(),
             height_decr_button_bounding_box: Rect::default(),
             height_incr_button_bounding_box: Rect::default(),
             start_button_bounding_box: Rect::default(),
             one_player_game,
+            difficulty,
             image_background,
             image_plus,
             image_minus,
@@ -105,6 +144,12 @@ impl MainMenuScene {
             image_height,
             image_one_player,
             image_two_players,
+            image_disabled_checked_radio,
+            image_disabled_unchecked_radio,
+            image_easy,
+            image_medium,
+            image_unchecked_radio,
+            image_checked_radio,
             spritebatch_plus: batch_plus,
             spritebatch_minus: batch_minus,
             spritebatch_width: batch_width,
@@ -162,6 +207,20 @@ impl MainMenuScene {
             MAIN_MENU_INCR_BUTTON_WIDTH * scene_scale.0,
             MAIN_MENU_INCR_BUTTON_HEIGHT * scene_scale.1,
         )
+    }
+
+    fn get_radio_button_image(&mut self, difficulty: Difficulty) -> &graphics::Image {
+        if self.one_player_game {
+            if self.difficulty == difficulty {
+                return &self.image_checked_radio;
+            } else {
+                return &self.image_unchecked_radio;
+            }
+        } else if self.difficulty == difficulty {
+            return &self.image_disabled_checked_radio;
+        }
+
+        &self.image_disabled_unchecked_radio
     }
 }
 
@@ -313,6 +372,71 @@ impl Scene for MainMenuScene {
             spritebatch.clear();
         }
 
+        let image_radio_easy = self.get_radio_button_image(Difficulty::Easy);
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            image_radio_easy,
+            graphics::DrawParam::new()
+                .dest(Point2::new(
+                    MAIN_MENU_CHECKBOX_EASY_X * scene_scale.0 + translation.0,
+                    MAIN_MENU_CHECKBOX_EASY_Y * scene_scale.1 + translation.1,
+                ))
+                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
+        )?;
+
+        self.easy_difficulty_bounding_box = Rect::new(
+            MAIN_MENU_CHECKBOX_EASY_X * scene_scale.0 + translation.0,
+            MAIN_MENU_CHECKBOX_EASY_Y * scene_scale.1 + translation.1,
+            image_radio_easy.width() as f32 * scene_scale.0,
+            image_radio_easy.height() as f32 * scene_scale.1,
+        );
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.image_easy,
+            graphics::DrawParam::new()
+                .dest(Point2::new(
+                    MAIN_MENU_EASY_X * scene_scale.0 + translation.0,
+                    MAIN_MENU_EASY_Y * scene_scale.1 + translation.1,
+                ))
+                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
+        )?;
+
+        let image_radio_medium = self.get_radio_button_image(Difficulty::Medium);
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            image_radio_medium,
+            graphics::DrawParam::new()
+                .dest(Point2::new(
+                    MAIN_MENU_CHECKBOX_MEDIUM_X * scene_scale.0 + translation.0,
+                    MAIN_MENU_CHECKBOX_MEDIUM_Y * scene_scale.1 + translation.1,
+                ))
+                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
+        )?;
+
+        
+        self.medium_difficulty_bounding_box = Rect::new(
+            MAIN_MENU_CHECKBOX_MEDIUM_X * scene_scale.0 + translation.0,
+            MAIN_MENU_CHECKBOX_MEDIUM_Y * scene_scale.1 + translation.1,
+            image_radio_medium.width() as f32 * scene_scale.0,
+            image_radio_medium.height() as f32 * scene_scale.1,
+        );
+
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.image_medium,
+            graphics::DrawParam::new()
+                .dest(Point2::new(
+                    MAIN_MENU_MEDIUM_X * scene_scale.0 + translation.0,
+                    MAIN_MENU_MEDIUM_Y * scene_scale.1 + translation.1,
+                ))
+                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
+        )?;
+
         graphics::present(ctx, quad_ctx)?;
         Ok(())
     }
@@ -374,10 +498,22 @@ impl Scene for MainMenuScene {
             self.one_player_game = false;
         });
 
+        self.easy_difficulty_bounding_box.contains(point).then(||{
+            if self.one_player_game {
+                self.difficulty = Difficulty::Easy;
+            }
+        });
+
+        self.medium_difficulty_bounding_box.contains(point).then(||{
+            if self.one_player_game {
+                self.difficulty = Difficulty::Medium;
+            }
+        });
+
         self.start_button_bounding_box.contains(point).then(|| {
-            let ai_player = GreadyAlgorithmPlayer::default();
             let game_mode = if self.one_player_game {
-                GameMode::OnePlayer(Box::new(ai_player))
+                let ai_player = get_cpu_player(&self.difficulty);
+                GameMode::OnePlayer(ai_player)
             } else {
                 GameMode::TwoPlayer
             };
@@ -389,6 +525,7 @@ impl Scene for MainMenuScene {
                         game::Player::Player1,
                         Board::new(self.width, self.height),
                         game_mode,
+                        self.difficulty,
                     )
                     .expect("board was initialized");
 
@@ -401,6 +538,7 @@ impl Scene for MainMenuScene {
                         game::Player::Player1,
                         &Board::new(self.width, self.height),
                         &game_mode,
+                        self.difficulty,
                     );
                     Transition::ToPreparePlayer(Box::new(prepare_player_scene))
                 }

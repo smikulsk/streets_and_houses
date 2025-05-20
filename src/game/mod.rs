@@ -1,12 +1,19 @@
+use crate::ai::prelude::*;
+
 use std::cmp::Ordering;
 
-pub mod ai;
 pub mod controller;
 
 #[derive(Debug, Clone)]
 pub enum GameMode {
-    OnePlayer(Box<dyn ai::MoveGenerator>),
+    OnePlayer(Box<dyn MoveGenerator>),
     TwoPlayer,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Difficulty {
+    Easy,
+    Medium,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -27,7 +34,7 @@ pub struct GameStatistics {
 #[derive(Debug, Clone)]
 pub struct Cell {
     _id: (usize, usize),
-    counter: usize,
+    pub counter: usize,
     pub owner: Option<Player>,
 }
 
