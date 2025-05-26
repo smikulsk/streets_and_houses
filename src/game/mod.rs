@@ -23,7 +23,17 @@ pub enum Player {
     CPU,
 }
 
-#[derive(Debug, Clone)]
+impl Player {
+    pub fn opponent(&self) -> Player {
+        match self {
+            Player::Player1 => Player::CPU,
+            Player::Player2 => Player::Player1,
+            Player::CPU => Player::Player1,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct GameStatistics {
     pub player1_points: usize,
     pub player2_points: usize,
@@ -50,7 +60,7 @@ impl Cell {
 
 #[derive(Debug, Clone)]
 pub struct Wall {
-    _id: (usize, usize),
+    pub id: (usize, usize),
     pub is_clicked: bool,
     pub adjacent_cells: Vec<(usize, usize)>,
     pub adjacent_joints: Vec<(Direction, usize, usize)>,
@@ -59,7 +69,7 @@ pub struct Wall {
 impl Wall {
     pub fn new(row: usize, col: usize) -> Self {
         Self {
-            _id: (row, col),
+            id: (row, col),
             is_clicked: false,
             adjacent_cells: vec![],
             adjacent_joints: vec![],
@@ -134,6 +144,7 @@ pub struct Board {
     pub cells: Vec<Vec<Cell>>,
     pub joints: Vec<Vec<Joint>>,
     pub walls: Vec<Vec<Wall>>,
+    pub statistics: GameStatistics,
 }
 
 impl Board {
@@ -206,6 +217,7 @@ impl Board {
             cells,
             joints,
             walls,
+            statistics: GameStatistics::default(),
         }
     }
 
@@ -223,6 +235,11 @@ impl Board {
                     cell.counter += 1;
                     if cell.counter == 4 {
                         cell.owner = Some(player);
+                        match player {
+                            Player::Player1 => self.statistics.player1_points += 1,
+                            Player::Player2 => self.statistics.player2_points += 1,
+                            Player::CPU => self.statistics.cpu_points += 1,
+                        }
                         additional_move = true;
                     }
                 }
@@ -249,33 +266,12 @@ impl Board {
     }
 
     pub fn get_statistics(&self) -> GameStatistics {
-        let player1_points = self
-            .cells
-            .iter()
-            .map(|row| {
-                row.iter()
-                    .filter(|cell| cell.owner == Some(Player::Player1))
-                    .count()
-            })
-            .sum::<usize>();
-        let player2_points = self
-            .cells
-            .iter()
-            .map(|row| {
-                row.iter()
-                    .filter(|cell| cell.owner == Some(Player::Player2))
-                    .count()
-            })
-            .sum::<usize>();
-        let cpu_points = self
-            .cells
-            .iter()
-            .map(|row| {
-                row.iter()
-                    .filter(|cell| cell.owner == Some(Player::CPU))
-                    .count()
-            })
-            .sum::<usize>();
+        let GameStatistics {
+            player1_points,
+            player2_points,
+            cpu_points,
+            winner: _,
+        } = self.statistics;
         let winner = match player1_points.cmp(&player2_points) {
             Ordering::Greater => compare_with_cpu(player1_points, cpu_points),
             Ordering::Less => Some(Player::Player2),
@@ -308,6 +304,52 @@ fn check_coordinates(
         return Some((row as usize, col as usize));
     }
     None
+}
+
+impl std::fmt::Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        for row in 0..2 * self.height + 1 {
+            if row % 2 == 0 {
+                let mut s = String::new();
+                for col in 0..self.width {
+                    if self.walls[row][col].is_clicked {
+                        s += " *****";
+                    } else {
+                        s += " =====";
+                    }
+                }
+                writeln!(f, "{}", s)?;
+            } else {
+                for _ in 0..5 {
+                    let mut s = String::new();
+                    for col in 0..self.width + 1 {
+                        if self.walls[row][col].is_clicked {
+                            s += "*";
+                        } else {
+                            s += "|";
+                        }
+                        if col < self.width {
+                            if let Some(player) = self.cells[row / 2][col].owner {
+                                match player {
+                                    Player::Player1 => s += &"A".repeat(5),
+                                    Player::Player2 => s += &"B".repeat(5),
+                                    Player::CPU => s += &"C".repeat(5),
+                                }
+                            }
+                            /*else if self.cells[row/2][col].counter > 0 && col < self.width {
+                                s += &format!("{}", self.cells[row/2][col].counter).repeat(5);
+                            }*/
+                            else {
+                                s += &" ".repeat(5);
+                            }
+                        }
+                    }
+                    writeln!(f, "{}", s)?;
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

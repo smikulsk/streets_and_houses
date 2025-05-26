@@ -8,23 +8,7 @@ impl MoveGenerator for RegionCountingPlayer {
         if board.all_is_clicked() {
             return None;
         }
-        let mut walls = vec![];
-
-        for (row, row_walls) in board.walls.iter().enumerate() {
-            for (col, wall) in row_walls.iter().enumerate() {
-                if wall.is_clicked {
-                    continue;
-                }
-                let max_counter = wall
-                    .adjacent_cells
-                    .iter()
-                    .map(|(r, c)| board.cells[*r][*c].counter)
-                    .max()
-                    .expect("at least one cell is adjacent to the wall");
-
-                walls.push(WallStatistics::new(row, col, max_counter));
-            }
-        }
+        let walls = collect_wall_statistics(board);
 
         let wall_region_size_map =
             build_region_size_map(board, &walls, |&ws| ws.max_adjacent_counter == 3);

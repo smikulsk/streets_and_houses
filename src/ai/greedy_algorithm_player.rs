@@ -8,23 +8,8 @@ impl MoveGenerator for GreadyAlgorithmPlayer {
         if board.all_is_clicked() {
             return None;
         }
-        let mut walls = vec![];
+        let walls = collect_wall_statistics(board);
 
-        for (row, row_walls) in board.walls.iter().enumerate() {
-            for (col, wall) in row_walls.iter().enumerate() {
-                if wall.is_clicked {
-                    continue;
-                }
-                let max_counter = wall
-                    .adjacent_cells
-                    .iter()
-                    .map(|(r, c)| board.cells[*r][*c].counter)
-                    .max()
-                    .expect("at least one cell is adjacent to the wall");
-
-                walls.push(WallStatistics::new(row, col, max_counter));
-            }
-        }
         // look for wall adjacent to cell with max counter = 3
         // if none found look for wall adjacent to cell with max counter = 0 or 1
         // if none found take random with max counter = 2
