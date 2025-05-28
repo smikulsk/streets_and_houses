@@ -13,7 +13,7 @@ pub type ColType = usize;
 pub type CounterType = usize;
 
 pub mod greedy_algorithm_player;
-pub mod minimax_player;
+pub mod minmax_player;
 pub mod prelude;
 pub mod region_counting_player;
 

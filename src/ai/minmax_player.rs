@@ -1,18 +1,18 @@
 use super::prelude::*;
 
 #[derive(Default, Debug, Clone)]
-pub struct MinimaxPlayer {
+pub struct MinmaxPlayer {
     pub max_depth: usize,
 }
 
-impl MinimaxPlayer {
+impl MinmaxPlayer {
     pub fn new() -> Self {
         Self {
             max_depth: MAX_MINMAX_DEPTH,
         }
     }
 
-    fn minimax(
+    fn minmax(
         &self,
         board: &Board,
         depth: usize,
@@ -20,9 +20,9 @@ impl MinimaxPlayer {
         mut alpha: i32,
         mut beta: i32,
         player: Player,
-    ) -> (i32, Option<(RowType, ColType)>) {
+    ) -> (i32, Vec<(RowType, ColType)>) {
         if depth == 0 || board.all_is_clicked() {
-            return (self.evaluate(board), None);
+            return (self.evaluate(board), vec![]);
         }
 
         let mut best_score = if maximizing_player {
@@ -30,7 +30,7 @@ impl MinimaxPlayer {
         } else {
             i32::MAX
         };
-        let mut best_move = None;
+        let mut best_move = vec![];
 
         for (row, col) in available_moves(board) {
             let mut new_board = board.clone();
@@ -39,9 +39,9 @@ impl MinimaxPlayer {
                 .expect("the wall was not clicked twice");
 
             let (score, _) = if additional_move {
-                self.minimax(&new_board, depth, maximizing_player, alpha, beta, player)
+                self.minmax(&new_board, depth, maximizing_player, alpha, beta, player)
             } else {
-                self.minimax(
+                self.minmax(
                     &new_board,
                     depth - 1,
                     !maximizing_player,
@@ -50,15 +50,18 @@ impl MinimaxPlayer {
                     player.opponent(),
                 )
             };
-            #[cfg(feature="print_debug")]
+            #[cfg(feature = "print_debug")]
             if depth == self.max_depth {
                 println!("Evaluating move ({row}, {col}): score = {score}");
             }
 
+            if score == best_score {
+                best_move.push((row, col));
+            }
             if maximizing_player {
                 if score > best_score {
                     best_score = best_score.max(score);
-                    best_move = Some((row, col));
+                    best_move = vec![(row, col)];
                     alpha = alpha.max(best_score);
 
                     if beta <= alpha {
@@ -67,7 +70,7 @@ impl MinimaxPlayer {
                 }
             } else if score < best_score {
                 best_score = score;
-                best_move = Some((row, col));
+                best_move = vec![(row, col)];
                 beta = beta.min(best_score);
                 if beta <= alpha {
                     break;
@@ -90,35 +93,35 @@ fn available_moves(board: &Board) -> impl Iterator<Item = (usize, usize)> + use<
     unclicked_walls.into_iter().map(|ws| (ws.row, ws.col))
 }
 
-impl MoveGenerator for MinimaxPlayer {
+impl MoveGenerator for MinmaxPlayer {
     fn next_move(&self, board: &Board) -> Option<(RowType, ColType)> {
         let (_, best_move) =
-            self.minimax(board, self.max_depth, true, i32::MIN, i32::MAX, Player::CPU);
-        #[cfg(feature="print_debug")]
+            self.minmax(board, self.max_depth, true, i32::MIN, i32::MAX, Player::CPU);
+        #[cfg(feature = "print_debug")]
         println!("Best move: {:?}", best_move);
-        best_move
+        choose_wall_index(&best_move, |_| true).copied()
     }
 }
 
 #[cfg(test)]
-mod minimax_player_tests {
+mod minmax_player_tests {
     use std::str::FromStr;
 
     use super::*;
 
     #[test]
-    fn gready_vs_minimax() {
+    fn gready_vs_minmax() {
         let sample_move_generator = GreadyAlgorithmPlayer::default();
-        let tested_move_generator = MinimaxPlayer::new();
+        let tested_move_generator = MinmaxPlayer::new();
 
         let stats = play_game(sample_move_generator, tested_move_generator);
         assert_eq!(Some(Player::CPU), stats.winner);
     }
 
     #[test]
-    fn region_vs_minimax() {
+    fn region_vs_minmax() {
         let sample_move_generator = RegionCountingPlayer::default();
-        let tested_move_generator = MinimaxPlayer::new();
+        let tested_move_generator = MinmaxPlayer::new();
 
         let stats = play_game(sample_move_generator, tested_move_generator);
         assert_eq!(Some(Player::CPU), stats.winner);
@@ -146,7 +149,7 @@ XAAAAAXCCCCCX     X
 XAAAAAXCCCCCX     X
  XXXXX XXXXX XXXXX";
         if let Ok(mut board) = Board::from_str(s) {
-            perform_all_moves(&MinimaxPlayer::new(), &mut board, Player::CPU);
+            perform_all_moves(&MinmaxPlayer::new(), &mut board, Player::CPU);
             assert_eq!(
                 " XXXXX XXXXX XXXXX
 X     |     X     X
