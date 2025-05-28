@@ -78,7 +78,7 @@ impl MainMenuScene {
             height_incr_button_bounding_box: Rect::default(),
             start_button_bounding_box: Rect::default(),
             one_player_game: true,
-            difficulty: Difficulty::Hard,
+            difficulty: Difficulty::Medium,
             image_background,
             image_plus,
             image_minus,
