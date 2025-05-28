@@ -176,6 +176,55 @@ XAAAAAXCCCCCXCCCCCX
         }
     }
 
+    #[test]
+    fn double_cell_should_be_taken_in_the_middle() {
+        let s = " ----- XXXXX -----
+X     |     X     X
+X     |     X     X
+X     |     X     X
+X     |     X     X
+X     |     X     X
+ XXXXX ----- -----
+|     X     X     X
+|     X     X     X
+|     X     X     X
+|     X     X     X
+|     X     X     X
+ ----- ----- -----
+|     X     |     X
+|     X     |     X
+|     X     |     X
+|     X     |     X
+|     X     |     X
+ XXXXX XXXXX XXXXX";
+        if let Ok(mut board) = Board::from_str(s) {
+            perform_all_moves(&MinmaxPlayer::new(), &mut board, Player::CPU);
+            assert_eq!(
+                " ----- XXXXX -----
+X     |     X     X
+X     |     X     X
+X     |     X     X
+X     |     X     X
+X     |     X     X
+ XXXXX ----- -----
+|     X     X     X
+|     X     X     X
+|     X     X     X
+|     X     X     X
+|     X     X     X
+ XXXXX ----- -----
+|     X     |     X
+|     X     |     X
+|     X     |     X
+|     X     |     X
+|     X     |     X
+ XXXXX XXXXX XXXXX
+",
+                format!("{board}")
+            );
+        }
+    }
+
     fn play_game(
         first_player_move_generator: impl MoveGenerator,
         second_player_move_generator: impl MoveGenerator,
