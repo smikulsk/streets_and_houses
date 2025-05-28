@@ -16,6 +16,7 @@ use ggez::GameResult;
 pub mod board_renderer;
 pub mod constants;
 pub mod prelude;
+pub mod ui;
 
 pub trait Renderer {
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult;

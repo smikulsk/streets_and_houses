@@ -1,5 +1,6 @@
 pub use super::board_renderer::*;
 pub use super::constants::*;
+pub use super::ui::*;
 
 use super::*;
 

@@ -13,6 +13,7 @@ pub type ColType = usize;
 pub type CounterType = usize;
 
 pub mod greedy_algorithm_player;
+pub mod minimax_player;
 pub mod prelude;
 pub mod region_counting_player;
 
@@ -112,6 +113,15 @@ fn collect_wall_statistics(board: &Board) -> Vec<WallStatistics> {
         .collect()
 }
 
+fn wall_priority(wall: &WallStatistics) -> usize {
+    match wall.max_adjacent_counter {
+        3 => 0,
+        0 | 1 => 1,
+        2 => 2,
+        _ => unreachable!("There shjould not be not clicked walls with more than 3 adjacent cells"),
+    }
+}
+
 #[cfg(test)]
 mod ai_functions_tests {
     use super::*;
@@ -208,5 +218,5 @@ mod ai_functions_tests {
             expected_region_size,
             find_region_size(&board, &wall)
         );
-    }
+}
 }

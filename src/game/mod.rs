@@ -14,6 +14,7 @@ pub enum GameMode {
 pub enum Difficulty {
     Easy,
     Medium,
+    Hard,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -27,8 +28,8 @@ impl Player {
     pub fn opponent(&self) -> Player {
         match self {
             Player::Player1 => Player::CPU,
-            Player::Player2 => Player::Player1,
             Player::CPU => Player::Player1,
+            _ => unimplemented!("This should not be used in two player game for now!"),
         }
     }
 }
@@ -286,6 +287,121 @@ impl Board {
     }
 }
 
+const REPEAT_COUNT: usize = 5;
+
+impl std::fmt::Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        for row in 0..2 * self.height + 1 {
+            if row % 2 == 0 {
+                let mut s = String::new();
+                for col in 0..self.width {
+                    if self.walls[row][col].is_clicked {
+                        s += format!(" {}", "X".repeat(REPEAT_COUNT)).as_str();
+                    } else {
+                        s += format!(" {}", "-".repeat(REPEAT_COUNT)).as_str();
+                    }
+                }
+                writeln!(f, "{}", s)?;
+            } else {
+                for _ in 0..REPEAT_COUNT {
+                    let mut s = String::new();
+                    for col in 0..self.width + 1 {
+                        if self.walls[row][col].is_clicked {
+                            s += "X";
+                        } else {
+                            s += "|";
+                        }
+                        if col < self.width {
+                            if let Some(player) = self.cells[row / 2][col].owner {
+                                match player {
+                                    Player::Player1 => s += &"A".repeat(REPEAT_COUNT),
+                                    Player::Player2 => s += &"B".repeat(REPEAT_COUNT),
+                                    Player::CPU => s += &"C".repeat(REPEAT_COUNT),
+                                }
+                            }
+                            /*else if self.cells[row/2][col].counter > 0 && col < self.width {
+                                s += &format!("{}", self.cells[row/2][col].counter).repeat(5);
+                            }*/
+                            else {
+                                s += &" ".repeat(REPEAT_COUNT);
+                            }
+                        }
+                    }
+                    writeln!(f, "{}", s)?;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl std::str::FromStr for Board {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty() {
+            return Err("Input string is empty".to_string());
+        }
+
+        let rows = s
+            .lines()
+            .enumerate()
+            .filter_map(|(idx, line)| match idx % (REPEAT_COUNT + 1) {
+                0 => Some(
+                    line.replace(&"X".repeat(REPEAT_COUNT), "X")
+                        .replace(&"-".repeat(REPEAT_COUNT), "-"),
+                ),
+                1 => Some(
+                    line.replace(&"A".repeat(REPEAT_COUNT), "A")
+                        .replace(&"B".repeat(REPEAT_COUNT), "B")
+                        .replace(&"C".repeat(REPEAT_COUNT), "C")
+                        .replace(&" ".repeat(REPEAT_COUNT), " ")                        
+                ),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+
+        let mut board = Board::new(rows[0].len() / 2, rows.len() / 2);
+        for (row_idx, row) in rows.iter().enumerate() {
+            if row_idx % 2 == 0 {
+                for (col_idx, cell) in row.chars().enumerate() {
+                    if cell == 'X' {
+                        let wall = &mut board.walls[row_idx][col_idx / 2];
+                        wall.is_clicked = true;
+                        for (row_cell, col_cell) in &wall.adjacent_cells {
+                            board.cells[*row_cell][*col_cell].counter += 1;
+                        }
+                        for (direction, row, col) in &wall.adjacent_joints {
+                            board.joints[*row][*col].set_wall_clicked(*direction);
+                        }
+                    }
+                }
+            } else {
+                for (col_idx, ch) in row.chars().enumerate() {
+                    match ch {
+                        'X' => {
+                            let wall = &mut board.walls[row_idx][col_idx / 2];
+                            wall.is_clicked = true;
+                            for (row_cell, col_cell) in &wall.adjacent_cells {
+                                board.cells[*row_cell][*col_cell].counter += 1;
+                            }
+                            for (direction, row, col) in &wall.adjacent_joints {
+                                board.joints[*row][*col].set_wall_clicked(*direction);
+                            }
+                        }
+                        'A' => board.cells[row_idx / 2][col_idx / 2].owner = Some(Player::Player1),
+                        'B' => board.cells[row_idx / 2][col_idx / 2].owner = Some(Player::Player2),
+                        'C' => board.cells[row_idx / 2][col_idx / 2].owner = Some(Player::CPU),
+                        _ => (),
+                    }
+                }
+            }
+        }
+
+        Ok(board)
+    }
+}
+
 fn compare_with_cpu(player1_points: usize, cpu_points: usize) -> Option<Player> {
     match player1_points.cmp(&cpu_points) {
         Ordering::Greater => Some(Player::Player1),
@@ -304,52 +420,6 @@ fn check_coordinates(
         return Some((row as usize, col as usize));
     }
     None
-}
-
-impl std::fmt::Display for Board {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        for row in 0..2 * self.height + 1 {
-            if row % 2 == 0 {
-                let mut s = String::new();
-                for col in 0..self.width {
-                    if self.walls[row][col].is_clicked {
-                        s += " *****";
-                    } else {
-                        s += " =====";
-                    }
-                }
-                writeln!(f, "{}", s)?;
-            } else {
-                for _ in 0..5 {
-                    let mut s = String::new();
-                    for col in 0..self.width + 1 {
-                        if self.walls[row][col].is_clicked {
-                            s += "*";
-                        } else {
-                            s += "|";
-                        }
-                        if col < self.width {
-                            if let Some(player) = self.cells[row / 2][col].owner {
-                                match player {
-                                    Player::Player1 => s += &"A".repeat(5),
-                                    Player::Player2 => s += &"B".repeat(5),
-                                    Player::CPU => s += &"C".repeat(5),
-                                }
-                            }
-                            /*else if self.cells[row/2][col].counter > 0 && col < self.width {
-                                s += &format!("{}", self.cells[row/2][col].counter).repeat(5);
-                            }*/
-                            else {
-                                s += &" ".repeat(5);
-                            }
-                        }
-                    }
-                    writeln!(f, "{}", s)?;
-                }
-            }
-        }
-        Ok(())
-    }
 }
 
 #[cfg(test)]

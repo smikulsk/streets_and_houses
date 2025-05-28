@@ -1,5 +1,6 @@
 use crate::ai::prelude::*;
 use crate::game::Difficulty;
+use crate::rendering::ui::{RadioButton, SceneTransformation};
 use crate::scene::prelude::*;
 
 #[derive(Debug)]
@@ -8,8 +9,9 @@ pub struct MainMenuScene {
     height: usize,
     one_player_bounding_box: Rect,
     two_players_bounding_box: Rect,
-    easy_difficulty_bounding_box : Rect,
-    medium_difficulty_bounding_box : Rect,
+    easy_difficulty_bounding_box: Rect,
+    medium_difficulty_bounding_box: Rect,
+    hard_difficulty_bounding_box: Rect,
     width_decr_button_bounding_box: Rect,
     width_incr_button_bounding_box: Rect,
     height_decr_button_bounding_box: Rect,
@@ -28,6 +30,7 @@ pub struct MainMenuScene {
     image_disabled_unchecked_radio: graphics::Image,
     image_easy: graphics::Image,
     image_medium: graphics::Image,
+    image_hard: graphics::Image,
     image_unchecked_radio: graphics::Image,
     image_checked_radio: graphics::Image,
     spritebatch_plus: graphics::spritebatch::SpriteBatch,
@@ -53,6 +56,7 @@ impl MainMenuScene {
             graphics::Image::new(ctx, quad_ctx, "ui/disabled_radio.png")?;
         let image_easy = graphics::Image::new(ctx, quad_ctx, "ui/easy.png")?;
         let image_medium = graphics::Image::new(ctx, quad_ctx, "ui/medium.png")?;
+        let image_hard = graphics::Image::new(ctx, quad_ctx, "ui/hard.png")?;
         let image_unchecked_radio = graphics::Image::new(ctx, quad_ctx, "ui/unchecked_radio.png")?;
         let image_checked_radio = graphics::Image::new(ctx, quad_ctx, "ui/checked_radio.png")?;
         let batch_plus = graphics::spritebatch::SpriteBatch::new(image_plus.clone());
@@ -67,13 +71,14 @@ impl MainMenuScene {
             two_players_bounding_box: Rect::default(),
             easy_difficulty_bounding_box: Rect::default(),
             medium_difficulty_bounding_box: Rect::default(),
+            hard_difficulty_bounding_box: Rect::default(),
             width_decr_button_bounding_box: Rect::default(),
             width_incr_button_bounding_box: Rect::default(),
             height_decr_button_bounding_box: Rect::default(),
             height_incr_button_bounding_box: Rect::default(),
             start_button_bounding_box: Rect::default(),
             one_player_game: true,
-            difficulty: Difficulty::Medium,
+            difficulty: Difficulty::Hard,
             image_background,
             image_plus,
             image_minus,
@@ -85,6 +90,7 @@ impl MainMenuScene {
             image_disabled_unchecked_radio,
             image_easy,
             image_medium,
+            image_hard,
             image_unchecked_radio,
             image_checked_radio,
             spritebatch_plus: batch_plus,
@@ -116,6 +122,7 @@ impl MainMenuScene {
             graphics::Image::new(ctx, quad_ctx, "ui/disabled_radio.png")?;
         let image_easy = graphics::Image::new(ctx, quad_ctx, "ui/easy.png")?;
         let image_medium = graphics::Image::new(ctx, quad_ctx, "ui/medium.png")?;
+        let image_hard = graphics::Image::new(ctx, quad_ctx, "ui/hard.png")?;
         let image_unchecked_radio = graphics::Image::new(ctx, quad_ctx, "ui/unchecked_radio.png")?;
         let image_checked_radio = graphics::Image::new(ctx, quad_ctx, "ui/checked_radio.png")?;
         let batch_plus = graphics::spritebatch::SpriteBatch::new(image_plus.clone());
@@ -130,6 +137,7 @@ impl MainMenuScene {
             two_players_bounding_box: Rect::default(),
             easy_difficulty_bounding_box: Rect::default(),
             medium_difficulty_bounding_box: Rect::default(),
+            hard_difficulty_bounding_box: Rect::default(),
             width_decr_button_bounding_box: Rect::default(),
             width_incr_button_bounding_box: Rect::default(),
             height_decr_button_bounding_box: Rect::default(),
@@ -148,6 +156,7 @@ impl MainMenuScene {
             image_disabled_unchecked_radio,
             image_easy,
             image_medium,
+            image_hard,
             image_unchecked_radio,
             image_checked_radio,
             spritebatch_plus: batch_plus,
@@ -209,7 +218,7 @@ impl MainMenuScene {
         )
     }
 
-    fn get_radio_button_image(&mut self, difficulty: Difficulty) -> &graphics::Image {
+    fn get_radio_button_image(&self, difficulty: Difficulty) -> &graphics::Image {
         if self.one_player_game {
             if self.difficulty == difficulty {
                 return &self.image_checked_radio;
@@ -221,6 +230,48 @@ impl MainMenuScene {
         }
 
         &self.image_disabled_unchecked_radio
+    }
+
+    fn draw_difficulty_radio(
+        &self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::GraphicsContext,
+        difficulty: Difficulty,
+        button: RadioButton,
+        transformation: SceneTransformation,
+    ) -> Rect {
+        let image_radio = self.get_radio_button_image(difficulty);
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            image_radio,
+            graphics::DrawParam::new()
+                .dest(Point2::new(
+                    button.radio_pos.0 * transformation.scene_scale.0 + transformation.translation.0,
+                    button.radio_pos.1 * transformation.scene_scale.1 + transformation.translation.1,
+                ))
+                .scale(Vector2::new(transformation.scene_scale.0, transformation.scene_scale.1)),
+        )
+        .expect("draw radio button");
+        let bounding_box = Rect::new(
+            button.radio_pos.0 * transformation.scene_scale.0 + transformation.translation.0,
+            button.radio_pos.1 * transformation.scene_scale.1 + transformation.translation.1,
+            image_radio.width() as f32 * transformation.scene_scale.0,
+            image_radio.height() as f32 * transformation.scene_scale.1,
+        );
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            button.label_image,
+            graphics::DrawParam::new()
+                .dest(Point2::new(
+                    button.label_pos.0 * transformation.scene_scale.0 + transformation.translation.0,
+                    button.label_pos.1 * transformation.scene_scale.1 + transformation.translation.1,
+                ))
+                .scale(Vector2::new(transformation.scene_scale.0, transformation.scene_scale.1)),
+        )
+        .expect("draw label");
+        bounding_box
     }
 }
 
@@ -352,13 +403,6 @@ impl Scene for MainMenuScene {
             ));
         self.spritebatch_height.add(p);
 
-        self.start_button_bounding_box = graphics::Rect::new(
-            translation.0 + MAIN_MENU_START_BUTTON_X * scene_scale.0,
-            translation.1 + MAIN_MENU_START_BUTTON_Y * scene_scale.1,
-            MAIN_MENU_START_BUTTON_WIDTH * scene_scale.0,
-            MAIN_MENU_START_BUTTON_HEIGHT * scene_scale.1,
-        );
-
         #[cfg(feature = "draw_bounding_rects")]
         draw_bounding_rect(ctx, quad_ctx, self.start_button_bounding_box)?;
 
@@ -372,70 +416,48 @@ impl Scene for MainMenuScene {
             spritebatch.clear();
         }
 
-        let image_radio_easy = self.get_radio_button_image(Difficulty::Easy);
-        graphics::draw(
+        self.easy_difficulty_bounding_box = self.draw_difficulty_radio(
             ctx,
             quad_ctx,
-            image_radio_easy,
-            graphics::DrawParam::new()
-                .dest(Point2::new(
-                    MAIN_MENU_CHECKBOX_EASY_X * scene_scale.0 + translation.0,
-                    MAIN_MENU_CHECKBOX_EASY_Y * scene_scale.1 + translation.1,
-                ))
-                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
-        )?;
-
-        self.easy_difficulty_bounding_box = Rect::new(
-            MAIN_MENU_CHECKBOX_EASY_X * scene_scale.0 + translation.0,
-            MAIN_MENU_CHECKBOX_EASY_Y * scene_scale.1 + translation.1,
-            image_radio_easy.width() as f32 * scene_scale.0,
-            image_radio_easy.height() as f32 * scene_scale.1,
+            Difficulty::Easy,
+            RadioButton::new(
+                (MAIN_MENU_CHECKBOX_EASY_X, MAIN_MENU_CHECKBOX_EASY_Y),
+                (MAIN_MENU_EASY_X, MAIN_MENU_EASY_Y),
+                &self.image_easy,
+            ),
+            SceneTransformation::new(scene_scale, translation),
         );
 
-        graphics::draw(
+        self.medium_difficulty_bounding_box = self.draw_difficulty_radio(
             ctx,
             quad_ctx,
-            &self.image_easy,
-            graphics::DrawParam::new()
-                .dest(Point2::new(
-                    MAIN_MENU_EASY_X * scene_scale.0 + translation.0,
-                    MAIN_MENU_EASY_Y * scene_scale.1 + translation.1,
-                ))
-                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
-        )?;
-
-        let image_radio_medium = self.get_radio_button_image(Difficulty::Medium);
-        graphics::draw(
-            ctx,
-            quad_ctx,
-            image_radio_medium,
-            graphics::DrawParam::new()
-                .dest(Point2::new(
-                    MAIN_MENU_CHECKBOX_MEDIUM_X * scene_scale.0 + translation.0,
-                    MAIN_MENU_CHECKBOX_MEDIUM_Y * scene_scale.1 + translation.1,
-                ))
-                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
-        )?;
-
-        
-        self.medium_difficulty_bounding_box = Rect::new(
-            MAIN_MENU_CHECKBOX_MEDIUM_X * scene_scale.0 + translation.0,
-            MAIN_MENU_CHECKBOX_MEDIUM_Y * scene_scale.1 + translation.1,
-            image_radio_medium.width() as f32 * scene_scale.0,
-            image_radio_medium.height() as f32 * scene_scale.1,
+            Difficulty::Medium,
+            RadioButton::new(
+                (MAIN_MENU_CHECKBOX_MEDIUM_X, MAIN_MENU_CHECKBOX_MEDIUM_Y),
+                (MAIN_MENU_MEDIUM_X, MAIN_MENU_MEDIUM_Y),
+                &self.image_medium,
+            ),
+            SceneTransformation::new(scene_scale, translation),
         );
 
-        graphics::draw(
+        self.hard_difficulty_bounding_box = self.draw_difficulty_radio(
             ctx,
             quad_ctx,
-            &self.image_medium,
-            graphics::DrawParam::new()
-                .dest(Point2::new(
-                    MAIN_MENU_MEDIUM_X * scene_scale.0 + translation.0,
-                    MAIN_MENU_MEDIUM_Y * scene_scale.1 + translation.1,
-                ))
-                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
-        )?;
+            Difficulty::Hard,
+            RadioButton::new(
+                (MAIN_MENU_CHECKBOX_HARD_X, MAIN_MENU_CHECKBOX_HARD_Y),
+                (MAIN_MENU_HARD_X, MAIN_MENU_HARD_Y),
+                &self.image_hard,
+            ),
+            SceneTransformation::new(scene_scale, translation),
+        );
+
+        self.start_button_bounding_box = graphics::Rect::new(
+            translation.0 + MAIN_MENU_START_BUTTON_X * scene_scale.0,
+            translation.1 + MAIN_MENU_START_BUTTON_Y * scene_scale.1,
+            MAIN_MENU_START_BUTTON_WIDTH * scene_scale.0,
+            MAIN_MENU_START_BUTTON_HEIGHT * scene_scale.1,
+        );
 
         graphics::present(ctx, quad_ctx)?;
         Ok(())
@@ -498,15 +520,23 @@ impl Scene for MainMenuScene {
             self.one_player_game = false;
         });
 
-        self.easy_difficulty_bounding_box.contains(point).then(||{
+        self.easy_difficulty_bounding_box.contains(point).then(|| {
             if self.one_player_game {
                 self.difficulty = Difficulty::Easy;
             }
         });
 
-        self.medium_difficulty_bounding_box.contains(point).then(||{
+        self.medium_difficulty_bounding_box
+            .contains(point)
+            .then(|| {
+                if self.one_player_game {
+                    self.difficulty = Difficulty::Medium;
+                }
+            });
+
+         self.hard_difficulty_bounding_box.contains(point).then(|| {
             if self.one_player_game {
-                self.difficulty = Difficulty::Medium;
+                self.difficulty = Difficulty::Hard;
             }
         });
 

@@ -10,3 +10,4 @@ quad-rand="0.2.3"
 
 [features]
 draw_bounding_rects=[]
+print_debug=[]
