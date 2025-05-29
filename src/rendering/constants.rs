@@ -82,4 +82,4 @@ pub const GAME_OVER_START_BUTTON_Y: f32 = 458.0;
 pub const GAME_OVER_START_BUTTON_WIDTH: f32 = 178.0;
 pub const GAME_OVER_START_BUTTON_HEIGHT: f32 = 142.0;
 
-pub const MAX_MINMAX_DEPTH : usize = 3;
+pub const MAX_MINMAX_DEPTH : usize = 2;

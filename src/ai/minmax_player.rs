@@ -64,7 +64,7 @@ impl MinmaxPlayer {
                     best_move = vec![(row, col)];
                     alpha = alpha.max(best_score);
 
-                    if beta <= alpha {
+                    if beta < alpha {
                         break;
                     }
                 }
