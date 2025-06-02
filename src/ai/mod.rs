@@ -122,6 +122,12 @@ fn wall_priority(wall: &WallStatistics) -> usize {
     }
 }
 
+fn available_moves(board: &Board) -> impl Iterator<Item = (usize, usize)> + use<'_> {
+    let mut unclicked_walls = collect_wall_statistics(board);
+    unclicked_walls.sort_by_key(wall_priority);
+    unclicked_walls.into_iter().map(|ws| (ws.row, ws.col))
+}
+
 #[cfg(test)]
 mod ai_functions_tests {
     use super::*;

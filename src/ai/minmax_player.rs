@@ -1,8 +1,62 @@
+use std::hash::DefaultHasher;
+use std::hash::Hash;
+use std::hash::Hasher;
+
 use super::prelude::*;
 
 #[derive(Default, Debug, Clone)]
 pub struct MinmaxPlayer {
     pub max_depth: usize,
+}
+
+type MinmaxCache = std::collections::HashMap<u64, MinmaxBestMoves>;
+
+#[derive(Default, Debug, Clone)]
+struct MinmaxBestMoves {
+    score: i32,
+    moves: Vec<(RowType, ColType)>,
+}
+
+impl MinmaxBestMoves {
+    fn new(score: i32, moves: &[(RowType, ColType)]) -> Self {
+        Self {
+            score,
+            moves: moves.to_vec(),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+struct MinmaxParamters<'a> {
+    board: &'a Board,
+    depth: usize,
+    is_maximizing_player: bool,
+    player: Player,
+}
+
+impl<'a> MinmaxParamters<'a> {
+    fn new(board: &'a Board, depth: usize, is_maximizing_player: bool, player: Player) -> Self {
+        Self {
+            board,
+            depth,
+            is_maximizing_player,
+            player,
+        }
+    }
+}
+
+impl<'a> Hash for MinmaxParamters<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        for wall in self.board.walls.iter().flatten() {
+            wall.is_clicked.hash(state);
+        }
+        for cell in self.board.cells.iter().flatten() {
+            cell.owner.hash(state);
+        }
+        self.depth.hash(state);
+        self.is_maximizing_player.hash(state);
+        self.player.hash(state);
+    }
 }
 
 impl MinmaxPlayer {
@@ -14,40 +68,59 @@ impl MinmaxPlayer {
 
     fn minmax(
         &self,
-        board: &Board,
-        depth: usize,
-        maximizing_player: bool,
+        params: MinmaxParamters,
         mut alpha: i32,
         mut beta: i32,
-        player: Player,
-    ) -> (i32, Vec<(RowType, ColType)>) {
-        if depth == 0 || board.all_is_clicked() {
-            return (self.evaluate(board), vec![]);
+        cache: &mut MinmaxCache,
+    ) -> MinmaxBestMoves {
+        let hash = hash_state(params);
+
+        if let Some(result) = cache.get(&hash) {
+            return result.clone();
         }
 
-        let mut best_score = if maximizing_player {
+        if params.depth == 0 || params.board.all_is_clicked() {
+            let result = MinmaxBestMoves::new(self.evaluate(params.board), &[]);
+            cache.insert(hash, result.clone());
+            return result;
+        }
+
+        let mut best_score = if params.is_maximizing_player {
             i32::MIN
         } else {
             i32::MAX
         };
-        let mut best_move = vec![];
+        let mut best_moves = vec![];
 
-        for (row, col) in available_moves(board) {
-            let mut new_board = board.clone();
+        for (row, col) in available_moves(params.board) {
+            let mut new_board = params.board.clone();
             let additional_move = new_board
-                .click_wall(row, col, player)
+                .click_wall(row, col, params.player)
                 .expect("the wall was not clicked twice");
 
-            let (score, _) = if additional_move {
-                self.minmax(&new_board, depth, maximizing_player, alpha, beta, player)
-            } else {
+            let cur_best = if additional_move {
                 self.minmax(
-                    &new_board,
-                    depth - 1,
-                    !maximizing_player,
+                    MinmaxParamters::new(
+                        &new_board,
+                        params.depth,
+                        params.is_maximizing_player,
+                        params.player,
+                    ),
                     alpha,
                     beta,
-                    player.opponent(),
+                    cache,
+                )
+            } else {
+                self.minmax(
+                    MinmaxParamters::new(
+                        &new_board,
+                        params.depth - 1,
+                        !params.is_maximizing_player,
+                        params.player.opponent(),
+                    ),
+                    alpha,
+                    beta,
+                    cache,
                 )
             };
             #[cfg(feature = "print_debug")]
@@ -55,30 +128,32 @@ impl MinmaxPlayer {
                 println!("Evaluating move ({row}, {col}): score = {score}");
             }
 
-            if score == best_score {
-                best_move.push((row, col));
+            if cur_best.score == best_score {
+                best_moves.push((row, col));
             }
-            if maximizing_player {
-                if score > best_score {
-                    best_score = best_score.max(score);
-                    best_move = vec![(row, col)];
+            if params.is_maximizing_player {
+                if cur_best.score > best_score {
+                    best_score = best_score.max(cur_best.score);
+                    best_moves = vec![(row, col)];
                     alpha = alpha.max(best_score);
 
                     if beta < alpha {
                         break;
                     }
                 }
-            } else if score < best_score {
-                best_score = score;
-                best_move = vec![(row, col)];
+            } else if cur_best.score < best_score {
+                best_score = cur_best.score;
+                best_moves = vec![(row, col)];
                 beta = beta.min(best_score);
-                if beta <= alpha {
+                if beta < alpha {
                     break;
                 }
             }
         }
 
-        (best_score, best_move)
+        let result = MinmaxBestMoves::new(best_score, &best_moves);
+        cache.insert(hash, result.clone());
+        result
     }
 
     fn evaluate(&self, board: &Board) -> i32 {
@@ -87,20 +162,25 @@ impl MinmaxPlayer {
     }
 }
 
-fn available_moves(board: &Board) -> impl Iterator<Item = (usize, usize)> + use<'_> {
-    let mut unclicked_walls = collect_wall_statistics(board);
-    unclicked_walls.sort_by_key(wall_priority);
-    unclicked_walls.into_iter().map(|ws| (ws.row, ws.col))
-}
-
 impl MoveGenerator for MinmaxPlayer {
     fn next_move(&self, board: &Board) -> Option<(RowType, ColType)> {
-        let (_, best_move) =
-            self.minmax(board, self.max_depth, true, i32::MIN, i32::MAX, Player::CPU);
+        let mut cache = HashMap::new();
+        let best = self.minmax(
+            MinmaxParamters::new(board, self.max_depth, true, Player::CPU),
+            i32::MIN,
+            i32::MAX,
+            &mut cache,
+        );
         #[cfg(feature = "print_debug")]
-        println!("Best move: {:?}", best_move);
-        choose_wall_index(&best_move, |_| true).copied()
+        println!("Best move: {:?}", &best.moves);
+        choose_wall_index(&best.moves, |_| true).copied()
     }
+}
+
+fn hash_state(params: MinmaxParamters<'_>) -> u64 {
+    let hasher = &mut DefaultHasher::new();
+    params.hash(hasher);
+    hasher.finish()
 }
 
 #[cfg(test)]

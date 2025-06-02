@@ -17,7 +17,7 @@ pub enum Difficulty {
     Hard,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Player {
     Player1,
     Player2,
