@@ -125,6 +125,15 @@ impl Joint {
         }
     }
 
+    pub fn set_wall_unclicked(&mut self, direction: Direction) {
+        match direction {
+            Direction::North => self.north_wall_clicked = false,
+            Direction::East => self.east_wall_clicked = false,
+            Direction::South => self.south_wall_clicked = false,
+            Direction::West => self.west_wall_clicked = false,
+        }
+    }
+
     pub fn get_joint_mask(&self) -> usize {
         [
             self.north_wall_clicked,
@@ -251,8 +260,39 @@ impl Board {
         } else {
             return Err("Wall is already clicked!".to_string());
         }
-
+        
         Ok(additional_move)
+    }
+
+    pub fn unclick_wall(&mut self, row: usize, col: usize, player: Player) -> Result<(), String> {
+        if row > 2 * self.height || (row % 2 == 0 && col >= self.width) || col > self.width {
+            return Err("Wrong coordinates of wall".to_string());
+        }
+        let wall = &mut self.walls[row][col];
+        if wall.is_clicked {
+            wall.is_clicked = false;
+            for (cell_row, cell_col) in &wall.adjacent_cells {
+                let cell = &mut self.cells[*cell_row][*cell_col];
+                if cell.counter > 0 {
+                    cell.counter -= 1;
+                    if cell.counter < 4 {
+                        cell.owner = None;
+                        match player {
+                            Player::Player1 => self.statistics.player1_points -= 1,
+                            Player::Player2 => self.statistics.player2_points -= 1,
+                            Player::CPU => self.statistics.cpu_points -= 1,
+                        }
+                    }
+                }
+            }
+            for (direction, row, col) in &wall.adjacent_joints {
+                self.joints[*row][*col].set_wall_unclicked(*direction);
+            }
+        } else {
+            return Err("Wall is not clicked!".to_string());
+        }
+
+        Ok(())
     }
 
     pub fn all_is_clicked(&self) -> bool {
@@ -355,7 +395,7 @@ impl std::str::FromStr for Board {
                     line.replace(&"A".repeat(REPEAT_COUNT), "A")
                         .replace(&"B".repeat(REPEAT_COUNT), "B")
                         .replace(&"C".repeat(REPEAT_COUNT), "C")
-                        .replace(&" ".repeat(REPEAT_COUNT), " ")                        
+                        .replace(&" ".repeat(REPEAT_COUNT), " "),
                 ),
                 _ => None,
             })

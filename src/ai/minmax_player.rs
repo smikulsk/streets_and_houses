@@ -1,13 +1,9 @@
+use std::cell::RefCell;
 use std::hash::DefaultHasher;
 use std::hash::Hash;
 use std::hash::Hasher;
 
 use super::prelude::*;
-
-#[derive(Default, Debug, Clone)]
-pub struct MinmaxPlayer {
-    pub max_depth: usize,
-}
 
 type MinmaxCache = std::collections::HashMap<u64, MinmaxBestMoves>;
 
@@ -59,29 +55,30 @@ impl<'a> Hash for MinmaxParamters<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct MinmaxPlayer {
+    pub max_depth: usize,
+    cache: RefCell<MinmaxCache>,
+}
+
 impl MinmaxPlayer {
     pub fn new() -> Self {
         Self {
             max_depth: MAX_MINMAX_DEPTH,
+            cache: RefCell::new(HashMap::new()),
         }
     }
 
-    fn minmax(
-        &self,
-        params: MinmaxParamters,
-        mut alpha: i32,
-        mut beta: i32,
-        cache: &mut MinmaxCache,
-    ) -> MinmaxBestMoves {
+    fn minmax(&self, params: MinmaxParamters, mut alpha: i32, mut beta: i32) -> MinmaxBestMoves {
         let hash = hash_state(params);
 
-        if let Some(result) = cache.get(&hash) {
-            return result.clone();
+        if let Some(value) = self.check_in_cache(hash) {
+            return value;
         }
 
         if params.depth == 0 || params.board.all_is_clicked() {
             let result = MinmaxBestMoves::new(self.evaluate(params.board), &[]);
-            cache.insert(hash, result.clone());
+            self.update_cache(hash, &result);
             return result;
         }
 
@@ -108,7 +105,6 @@ impl MinmaxPlayer {
                     ),
                     alpha,
                     beta,
-                    cache,
                 )
             } else {
                 self.minmax(
@@ -120,7 +116,6 @@ impl MinmaxPlayer {
                     ),
                     alpha,
                     beta,
-                    cache,
                 )
             };
             #[cfg(feature = "print_debug")]
@@ -152,8 +147,23 @@ impl MinmaxPlayer {
         }
 
         let result = MinmaxBestMoves::new(best_score, &best_moves);
-        cache.insert(hash, result.clone());
+        self.update_cache(hash, &result);
         result
+    }
+
+    fn check_in_cache(&self, hash: u64) -> Option<MinmaxBestMoves> {
+        if let Ok(cache) = self.cache.try_borrow() {
+            if let Some(result) = cache.get(&hash) {
+                return Some(result.clone());
+            }
+        }
+        None
+    }
+
+    fn update_cache(&self, hash: u64, value: &MinmaxBestMoves) {
+        if let Ok(mut cache) = self.cache.try_borrow_mut() {
+            cache.insert(hash, value.clone());
+        }
     }
 
     fn evaluate(&self, board: &Board) -> i32 {
@@ -162,14 +172,18 @@ impl MinmaxPlayer {
     }
 }
 
+impl Default for MinmaxPlayer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MoveGenerator for MinmaxPlayer {
     fn next_move(&self, board: &Board) -> Option<(RowType, ColType)> {
-        let mut cache = HashMap::new();
         let best = self.minmax(
             MinmaxParamters::new(board, self.max_depth, true, Player::CPU),
             i32::MIN,
             i32::MAX,
-            &mut cache,
         );
         #[cfg(feature = "print_debug")]
         println!("Best move: {:?}", &best.moves);
