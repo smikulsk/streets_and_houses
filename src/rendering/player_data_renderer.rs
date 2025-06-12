@@ -16,11 +16,15 @@ impl PlayerDataRenderer {
         quad_ctx: &mut miniquad::GraphicsContext,
         player: Player,
         points: usize,
+        is_player_turn : bool,
     ) -> GameResult<Self> {
         let image_title = match player {
-            Player::Player1 => graphics::Image::new(ctx, quad_ctx, "ui/player_1.png")?,
+            Player::Player1 if is_player_turn => graphics::Image::new(ctx, quad_ctx, "ui/player_1_u.png")?,
+            Player::Player1  => graphics::Image::new(ctx, quad_ctx, "ui/player_1.png")?,
+            Player::Player2 if is_player_turn => graphics::Image::new(ctx, quad_ctx, "ui/player_2_u.png")?,
             Player::Player2 => graphics::Image::new(ctx, quad_ctx, "ui/player_2.png")?,
-            Player::CPU => graphics::Image::new(ctx, quad_ctx, "ui/CPU.png")?,
+            Player::CPU if is_player_turn => graphics::Image::new(ctx, quad_ctx, "ui/CPU_u.png")?,
+            Player::CPU  => graphics::Image::new(ctx, quad_ctx, "ui/CPU.png")?,
         };
         let image_points = convert_points_to_list_of_images(ctx, quad_ctx, points)?;
         let orientation = get_scene_orientation(quad_ctx);

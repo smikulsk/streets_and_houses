@@ -39,17 +39,18 @@ impl PlayingScene {
             quad_ctx,
             Player::Player1,
             board.statistics.player1_points,
+            player == Player::Player1,
         )?;
         let second_player_renderer = match game_mode {
             GameMode::OnePlayer(_) => {
-                PlayerDataRenderer::new(ctx, quad_ctx, Player::CPU, board.statistics.cpu_points)?
+                PlayerDataRenderer::new(ctx, quad_ctx, Player::CPU, board.statistics.cpu_points, player == Player::CPU)?
             }
             GameMode::TwoPlayer => PlayerDataRenderer::new(
                 ctx,
                 quad_ctx,
                 Player::Player2,
                 board.statistics.player2_points,
-            )?,
+                player == Player::Player2)?,
         };
 
         let s = PlayingScene {
