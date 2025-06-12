@@ -1,8 +1,15 @@
 pub use super::board_renderer::*;
 pub use super::constants::*;
+pub use super::player_data_renderer::*;
 pub use super::ui::*;
 
 use super::*;
+
+#[derive(Debug)]
+pub enum Orientation {
+    Horizontal,
+    Vertical,
+}
 
 pub fn draw_text(
     ctx: &mut Context,
@@ -22,4 +29,14 @@ pub fn draw_text(
     graphics::draw(ctx, quad_ctx, &text, dest_point)?;
 
     Ok(Rect::new(x, y, text_width, text_height))
+}
+
+pub fn get_scene_orientation(quad_ctx: &mut miniquad::Context) -> Orientation {
+    let (w, h) = quad_ctx.display().screen_size();
+
+    if w > h {
+        Orientation::Horizontal
+    } else {
+        Orientation::Vertical
+    }
 }

@@ -3,17 +3,20 @@ use ggez::timer;
 use super::*;
 use crate::game::GameMode;
 use crate::game::Player;
+use crate::rendering::prelude::*;
 use crate::rendering::Renderer;
 use crate::scene::prelude::*;
 
 #[derive(Debug)]
 pub struct PlayingScene {
     board_renderer: BoardRenderer,
+    first_player_renderer: PlayerDataRenderer,
+    second_player_renderer: PlayerDataRenderer,
     board: game::Board,
     player: game::Player,
     wall_bounding_boxes: Vec<Vec<Rect>>,
     game_mode: game::GameMode,
-    difficulty : game::Difficulty,
+    difficulty: game::Difficulty,
     already_drawn: bool,
     deferred_transition: Option<Transition>,
 }
@@ -25,15 +28,34 @@ impl PlayingScene {
         player: Player,
         board: Board,
         game_mode: game::GameMode,
-        difficulty : game::Difficulty,
+        difficulty: game::Difficulty,
     ) -> GameResult<PlayingScene> {
         let wall_bounding_boxes =
             vec![vec![Rect::default(); board.width + 1]; 2 * board.height + 1];
 
-        let board_renderer = BoardRenderer::new(ctx, quad_ctx, player, board.clone(), true)?;
+        let board_renderer = BoardRenderer::new(ctx, quad_ctx, player, board.clone(), false)?;
+        let first_player_renderer = PlayerDataRenderer::new(
+            ctx,
+            quad_ctx,
+            Player::Player1,
+            board.statistics.player1_points,
+        )?;
+        let second_player_renderer = match game_mode {
+            GameMode::OnePlayer(_) => {
+                PlayerDataRenderer::new(ctx, quad_ctx, Player::CPU, board.statistics.cpu_points)?
+            }
+            GameMode::TwoPlayer => PlayerDataRenderer::new(
+                ctx,
+                quad_ctx,
+                Player::Player2,
+                board.statistics.player2_points,
+            )?,
+        };
 
         let s = PlayingScene {
             board_renderer,
+            first_player_renderer,
+            second_player_renderer,
             board,
             player,
             wall_bounding_boxes,
@@ -55,6 +77,8 @@ impl PlayingScene {
         match self.board.click_wall(row, col, self.player) {
             Ok(additional_move) => {
                 self.board_renderer.set_board(&self.board);
+                self.update_points(ctx, quad_ctx);
+
                 if !additional_move {
                     let new_player = match self.player {
                         game::Player::Player1 => match &self.game_mode {
@@ -65,38 +89,39 @@ impl PlayingScene {
                     };
 
                     if !self.board.all_is_clicked() {
-                        self.deferred_transition = match self.game_mode {
-                            GameMode::OnePlayer(_) => {
-                                let game = PlayingScene::new(
-                                    ctx,
-                                    quad_ctx,
-                                    new_player,
-                                    self.board.clone(),
-                                    self.game_mode.clone(),
-                                    self.difficulty,
-                                )
-                                .expect("board was initialized");
+                        let game = PlayingScene::new(
+                            ctx,
+                            quad_ctx,
+                            new_player,
+                            self.board.clone(),
+                            self.game_mode.clone(),
+                            self.difficulty,
+                        )
+                        .expect("board was initialized");
 
-                                Some(Transition::ToPlaying(Box::new(game)))
-                            }
-                            GameMode::TwoPlayer => {
-                                let prepare_player_scene = PreparePlayerScene::new(
-                                    ctx,
-                                    quad_ctx,
-                                    new_player,
-                                    &self.board,
-                                    &self.game_mode,
-                                    self.difficulty,
-                                );
-                                Some(Transition::ToPreparePlayer(Box::new(prepare_player_scene)))
-                            }
-                        }
+                        self.deferred_transition = Some(Transition::ToPlaying(Box::new(game)));
                     }
                 }
                 self.already_drawn = false;
             }
             Err(error) => println!("Error occurred: '{}'", error),
         }
+    }
+
+    fn update_points(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::Context) {
+        self.first_player_renderer
+            .set_points(ctx, quad_ctx, self.board.statistics.player1_points)
+            .expect("Player 1 points can be set in the renderer");
+        match &self.game_mode {
+            GameMode::OnePlayer(_) => self
+                .second_player_renderer
+                .set_points(ctx, quad_ctx, self.board.statistics.cpu_points)
+                .expect("CPU points can be set in the renderer"),
+            GameMode::TwoPlayer => self
+                .second_player_renderer
+                .set_points(ctx, quad_ctx, self.board.statistics.player2_points)
+                .expect("Player 2 points can be set in the renderer"),
+        };
     }
 }
 
@@ -123,7 +148,8 @@ impl Scene for PlayingScene {
                     self.difficulty,
                     self.board.width,
                     self.board.height,
-                ).expect("scene has been created");
+                )
+                .expect("scene has been created");
                 return Ok(Some(Transition::ToGameOver(Box::new(game))));
             }
 
@@ -141,6 +167,10 @@ impl Scene for PlayingScene {
 
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
         self.board_renderer.draw(ctx, quad_ctx)?;
+        self.first_player_renderer.set_orientation(quad_ctx);
+        self.first_player_renderer.draw(ctx, quad_ctx)?;
+        self.second_player_renderer.set_orientation(quad_ctx);
+        self.second_player_renderer.draw(ctx, quad_ctx)?;
 
         self.wall_bounding_boxes = self.board_renderer.get_wall_bounding_boxes();
         self.already_drawn = true;

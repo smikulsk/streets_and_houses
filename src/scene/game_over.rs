@@ -286,7 +286,7 @@ impl Scene for GameOverScene {
     }
 
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
-        graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
+        graphics::clear(ctx, quad_ctx, graphics::Color::from_rgb_u32(MAIN_MENU_BGCOLOR));
 
         let scene_scale = get_scene_scale(quad_ctx);
         let translation = get_scene_translation(quad_ctx, scene_scale);
@@ -322,17 +322,4 @@ impl Scene for GameOverScene {
             Transition::ToMainMenu(Box::new(game.expect("scene has been created")))
         })
     }
-}
-
-fn convert_points_to_list_of_images(
-    ctx: &mut Context,
-    quad_ctx: &mut miniquad::Context,
-    points: usize,
-) -> GameResult<Vec<graphics::Image>> {
-    points
-        .to_string()
-        .chars()
-        .map(|d| d.to_digit(10).unwrap())
-        .map(|d| graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", d)))
-        .collect::<GameResult<Vec<_>>>()
 }

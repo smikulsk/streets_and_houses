@@ -205,13 +205,28 @@ impl BoardRenderer {
     pub fn set_board(&mut self, board: &Board) {
         self.board = board.clone();
     }
+
+    pub fn get_bg_color(&self) -> u32 {
+        match self.player {
+            Player::Player1 => PLAYER1_BGCOLOR,
+            Player::Player2 | Player::CPU => PLAYER2_BGCOLOR,
+        }
+    }
 }
 
 impl Renderer for BoardRenderer {
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
-        graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
+        graphics::clear(
+            ctx,
+            quad_ctx,
+            graphics::Color::from_rgb_u32(self.get_bg_color()),
+        );
 
-        let footer_rect = self.draw_footer(ctx, quad_ctx)?;
+        let footer_rect = if self.draw_footer {
+            self.draw_footer(ctx, quad_ctx)?
+        } else {
+            Rect::default()
+        };
 
         let tile_size = self.get_tile_size(quad_ctx, footer_rect.h);
         let translation = self.get_translation(quad_ctx, footer_rect.h, tile_size);

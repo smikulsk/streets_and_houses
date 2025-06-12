@@ -16,7 +16,6 @@ use ggez::GameResult;
 
 use std::fmt::Debug;
 
-use crate::rendering::board_renderer::*;
 use crate::rendering::constants::*;
 use crate::state::marker::*;
 use crate::state::transition::*;

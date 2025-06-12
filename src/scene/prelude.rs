@@ -142,3 +142,16 @@ pub fn draw_button(
         text_bounding_box.h + 20.0,
     ))
 }
+
+pub fn convert_points_to_list_of_images(
+    ctx: &mut Context,
+    quad_ctx: &mut miniquad::Context,
+    points: usize,
+) -> GameResult<Vec<graphics::Image>> {
+    points
+        .to_string()
+        .chars()
+        .map(|d| d.to_digit(10).expect("proper decimal digit"))
+        .map(|d| graphics::Image::new(ctx, quad_ctx, format!("ui/{:?}.png", d)))
+        .collect::<GameResult<Vec<_>>>()
+}

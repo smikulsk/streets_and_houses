@@ -32,7 +32,7 @@ impl Scene for TitleScreenScene {
     }
 
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
-        graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
+        graphics::clear(ctx, quad_ctx, graphics::Color::from_rgb_u32(TITLE_SCREEN_BGCOLOR));
 
         let scene_scale = get_scene_scale(quad_ctx);
 

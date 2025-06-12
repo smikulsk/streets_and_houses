@@ -287,7 +287,7 @@ impl Scene for MainMenuScene {
     }
 
     fn draw(&mut self, ctx: &mut Context, quad_ctx: &mut miniquad::GraphicsContext) -> GameResult {
-        graphics::clear(ctx, quad_ctx, graphics::Color::BLACK);
+        graphics::clear(ctx, quad_ctx, graphics::Color::from_rgb_u32(MAIN_MENU_BGCOLOR));
 
         let scene_scale = get_scene_scale(quad_ctx);
         let translation = get_scene_translation(quad_ctx, scene_scale);
@@ -547,32 +547,17 @@ impl Scene for MainMenuScene {
             } else {
                 GameMode::TwoPlayer
             };
-            match game_mode {
-                GameMode::OnePlayer(_) => {
-                    let game = PlayingScene::new(
-                        ctx,
-                        quad_ctx,
-                        game::Player::Player1,
-                        Board::new(self.width, self.height),
-                        game_mode,
-                        self.difficulty,
-                    )
-                    .expect("board was initialized");
+            let game = PlayingScene::new(
+                ctx,
+                quad_ctx,
+                game::Player::Player1,
+                Board::new(self.width, self.height),
+                game_mode,
+                self.difficulty,
+            )
+            .expect("board was initialized");
 
-                    Transition::ToPlaying(Box::new(game))
-                }
-                GameMode::TwoPlayer => {
-                    let prepare_player_scene = PreparePlayerScene::new(
-                        ctx,
-                        quad_ctx,
-                        game::Player::Player1,
-                        &Board::new(self.width, self.height),
-                        &game_mode,
-                        self.difficulty,
-                    );
-                    Transition::ToPreparePlayer(Box::new(prepare_player_scene))
-                }
-            }
+            Transition::ToPlaying(Box::new(game))            
         })
     }
 }

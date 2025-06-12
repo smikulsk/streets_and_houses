@@ -15,6 +15,7 @@ use ggez::GameResult;
 
 pub mod board_renderer;
 pub mod constants;
+pub mod player_data_renderer;
 pub mod prelude;
 pub mod ui;
 
