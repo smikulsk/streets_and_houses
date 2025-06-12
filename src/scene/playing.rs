@@ -144,8 +144,8 @@ impl PlayingScene {
         let (w, _) = quad_ctx.screen_size();
 
         let rect = Rect::new(
-            w - (10.0 + self.image_cancel.width() as f32) * scene_scale.0,
-            10.0 * scene_scale.1,
+            w - (PLAYING_CANCEL_BUTTON_MARGIN + self.image_cancel.width() as f32) * scene_scale.0,
+            PLAYING_CANCEL_BUTTON_MARGIN * scene_scale.1,
             self.image_cancel.width() as f32 * scene_scale.0,
             self.image_cancel.height() as f32 * scene_scale.1,
         );
@@ -224,7 +224,7 @@ impl Scene for PlayingScene {
         y: f32,
     ) -> Option<Transition> {
         let point = Point2::new(x, y);
-        
+
         if self.cancel_bounding_box.contains(point) {
             let game = MainMenuScene::new(ctx, quad_ctx).expect("scene was created");
 
