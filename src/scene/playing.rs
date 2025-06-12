@@ -226,9 +226,20 @@ impl Scene for PlayingScene {
         let point = Point2::new(x, y);
 
         if self.cancel_bounding_box.contains(point) {
-            let game = MainMenuScene::new(ctx, quad_ctx).expect("scene was created");
-
-            return Some(Transition::ToMainMenu(Box::new(game)));
+            let game = MainMenuScene::from(
+                ctx,
+                quad_ctx,
+                self.board.width,
+                self.board.height,
+                match &self.game_mode {
+                    GameMode::OnePlayer(_) => true,
+                    GameMode::TwoPlayer => false,
+                },
+                self.difficulty,
+            );
+            return Some(Transition::ToMainMenu(Box::new(
+                game.expect("scene has been created"),
+            )));
         }
 
         if self.player == Player::CPU || self.deferred_transition.is_some() {
