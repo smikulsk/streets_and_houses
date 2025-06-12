@@ -12,9 +12,11 @@ pub struct PlayingScene {
     board_renderer: BoardRenderer,
     first_player_renderer: PlayerDataRenderer,
     second_player_renderer: PlayerDataRenderer,
+    image_cancel: graphics::Image,
     board: game::Board,
     player: game::Player,
     wall_bounding_boxes: Vec<Vec<Rect>>,
+    cancel_bounding_box: Rect,
     game_mode: game::GameMode,
     difficulty: game::Difficulty,
     already_drawn: bool,
@@ -42,24 +44,32 @@ impl PlayingScene {
             player == Player::Player1,
         )?;
         let second_player_renderer = match game_mode {
-            GameMode::OnePlayer(_) => {
-                PlayerDataRenderer::new(ctx, quad_ctx, Player::CPU, board.statistics.cpu_points, player == Player::CPU)?
-            }
+            GameMode::OnePlayer(_) => PlayerDataRenderer::new(
+                ctx,
+                quad_ctx,
+                Player::CPU,
+                board.statistics.cpu_points,
+                player == Player::CPU,
+            )?,
             GameMode::TwoPlayer => PlayerDataRenderer::new(
                 ctx,
                 quad_ctx,
                 Player::Player2,
                 board.statistics.player2_points,
-                player == Player::Player2)?,
+                player == Player::Player2,
+            )?,
         };
+        let image_cancel = graphics::Image::new(ctx, quad_ctx, "ui/cancel.png")?;
 
         let s = PlayingScene {
             board_renderer,
             first_player_renderer,
             second_player_renderer,
+            image_cancel,
             board,
             player,
             wall_bounding_boxes,
+            cancel_bounding_box: Rect::default(),
             game_mode,
             difficulty,
             already_drawn: false,
@@ -124,6 +134,31 @@ impl PlayingScene {
                 .expect("Player 2 points can be set in the renderer"),
         };
     }
+
+    fn draw_cancel_button(
+        &self,
+        ctx: &mut Context,
+        quad_ctx: &mut miniquad::Context,
+    ) -> GameResult<Rect> {
+        let scene_scale = get_scene_scale(quad_ctx);
+        let (w, _) = quad_ctx.screen_size();
+
+        let rect = Rect::new(
+            w - (10.0 + self.image_cancel.width() as f32) * scene_scale.0,
+            10.0 * scene_scale.1,
+            self.image_cancel.width() as f32 * scene_scale.0,
+            self.image_cancel.height() as f32 * scene_scale.1,
+        );
+        graphics::draw(
+            ctx,
+            quad_ctx,
+            &self.image_cancel,
+            graphics::DrawParam::new()
+                .dest(Point2::new(rect.x, rect.y))
+                .scale(Vector2::new(scene_scale.0, scene_scale.1)),
+        )?;
+        Ok(rect)
+    }
 }
 
 impl Scene for PlayingScene {
@@ -174,6 +209,7 @@ impl Scene for PlayingScene {
         self.second_player_renderer.draw(ctx, quad_ctx)?;
 
         self.wall_bounding_boxes = self.board_renderer.get_wall_bounding_boxes();
+        self.cancel_bounding_box = self.draw_cancel_button(ctx, quad_ctx)?;
         self.already_drawn = true;
 
         Ok(())
@@ -187,6 +223,14 @@ impl Scene for PlayingScene {
         x: f32,
         y: f32,
     ) -> Option<Transition> {
+        let point = Point2::new(x, y);
+        
+        if self.cancel_bounding_box.contains(point) {
+            let game = MainMenuScene::new(ctx, quad_ctx).expect("scene was created");
+
+            return Some(Transition::ToMainMenu(Box::new(game)));
+        }
+
         if self.player == Player::CPU || self.deferred_transition.is_some() {
             return None;
         }
@@ -199,7 +243,7 @@ impl Scene for PlayingScene {
             };
             for col in 0..max_col {
                 let rect = self.wall_bounding_boxes[row][col];
-                if rect.contains(Point2::new(x, y)) {
+                if rect.contains(point) {
                     self.click_wall(ctx, quad_ctx, row, col);
                     return None;
                 }
