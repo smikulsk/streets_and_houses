@@ -1,4 +1,5 @@
 pub use super::board_renderer::*;
+pub use super::button_renderer::*;
 pub use super::constants::*;
 pub use super::player_data_renderer::*;
 pub use super::ui::*;
