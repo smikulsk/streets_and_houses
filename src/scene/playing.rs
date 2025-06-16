@@ -290,9 +290,12 @@ impl std::fmt::Display for PlayingScene {
         writeln!(f, "Height:{}", self.board.height)?;
         writeln!(f, "Board:")?;
         writeln!(f, "{}", self.board)?;
-        writeln!(f, "GameMode:{:?}", self.game_mode)?;
+        match self.game_mode {
+            GameMode::OnePlayer(_) => writeln!(f, "OnePlayerMode:true")?,
+            GameMode::TwoPlayer => writeln!(f, "OnePlayerMode:false")?,
+        }        
         writeln!(f, "Difficulty:{:?}", self.difficulty)?;
 
         Ok(())
     }
-}
+}   
