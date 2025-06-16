@@ -153,7 +153,22 @@ impl PlayingScene {
     }
     
     fn download_board(&self, _board: &Board) {
-        println!("Downloading board");
+        use crate::file;
+        let filename = format!("{}_board.txt", ggez::timer::time());
+        #[cfg(target_arch = "wasm32")]
+        {
+            println!("Downloading scene");
+            file::download_file(&filename, &self.to_string());
+            println!("Scene downloaded successfully");
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            println!("Saving scene");
+            match file::save_file(&filename, &self.to_string()) {
+                Ok(_) => println!("Scene saved successfully"),
+                Err(err) => eprintln!("Failed to save scene. Error occurred: {err}"),
+            }
+        }
     }
 }
 
@@ -265,5 +280,19 @@ impl Scene for PlayingScene {
             }
         }
         None
+    }
+}
+
+impl std::fmt::Display for PlayingScene {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        writeln!(f, "Player:{:?}", self.player)?;
+        writeln!(f, "Width:{}", self.board.width)?;
+        writeln!(f, "Height:{}", self.board.height)?;
+        writeln!(f, "Board:")?;
+        writeln!(f, "{}", self.board)?;
+        writeln!(f, "GameMode:{:?}", self.game_mode)?;
+        writeln!(f, "Difficulty:{:?}", self.difficulty)?;
+
+        Ok(())
     }
 }
