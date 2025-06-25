@@ -2,6 +2,8 @@
 <head>
     <meta charset="utf-8">
     <title>Streets'n'Houses</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icons/sh.ico" />
     <style>
         html,
         body {
@@ -53,6 +55,11 @@
             resizeCanvas();
             load("streets_and_houses.wasm");
         });
+    </script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("sw.js");
+        }
     </script>
 </body>
 </html>
