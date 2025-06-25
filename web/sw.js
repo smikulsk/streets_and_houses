@@ -6,14 +6,14 @@ const CACHE_NAME = `streets-and-houses-${VERSION}`;
 
 // The static resources that the app needs to function.
 const APP_STATIC_RESOURCES = [
-  "/",
-  "/index.html",
-  "/js_bundle.js",
-  "/icons/192.png",
-  "/icons/512.png",
-  "/icons/1024.png",
-  "/icons/sh.ico",
-  "/streets_and_houses.wasm"
+  "/streets_and_houses/",
+  "/streets_and_houses/index.html",
+  "/streets_and_houses/js_bundle.js",
+  "/streets_and_houses/icons/192.png",
+  "/streets_and_houses/icons/512.png",
+  "/streets_and_houses/icons/1024.png",
+  "/streets_and_houses/icons/sh.ico",
+  "/streets_and_houses/streets_and_houses.wasm"
 ];
 
 // On install, cache the static resources
