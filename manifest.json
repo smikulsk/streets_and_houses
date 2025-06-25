@@ -1,7 +1,7 @@
 {
   "name": "Streets'n'Houses",
   "short_name": "S'n'H",
-  "start_url": "/",
+  "start_url": "/streets_and_houses",
   "icons": [
     {
       "src": "icons/192.png",
